@@ -23,8 +23,6 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
-var base64Prefix = []byte("data:image/png;base64,")
-
 func setupWebServer(originalImages, upsizedImages chan string, imageDir, username, password string) *fiber.App {
 	app := fiber.New()
 
@@ -47,9 +45,9 @@ func setupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 		Level: compress.LevelBestSpeed,
 	}))
 
-	app.Static("/upsized", "./upsized")
+	app.Static("/upscaled", "./upscaled")
 
-	app.Post("/upsize", func(c *fiber.Ctx) error {
+	app.Post("/upscale", func(c *fiber.Ctx) error {
 		var shaDecoder = sha512.New()
 		var imagePath string
 		var imageSHA string
