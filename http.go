@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/sha512"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"image"
@@ -19,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/websocket/v2"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	_ "golang.org/x/image/webp"
 )
@@ -28,11 +28,19 @@ var base64Prefix = []byte("data:image/png;base64,")
 func setupWebServer(originalImages, upsizedImages chan string, imageDir, username, password string) *fiber.App {
 	app := fiber.New()
 
-	app.Use(basicauth.New(basicauth.Config{
+	app.Use("/upsize*", basicauth.New(basicauth.Config{
 		Users: map[string]string{
 			username: password,
 		},
 	}))
+	app.Use(func(c *fiber.Ctx) error {
+		if _, ok := c.Locals("username").(string); ok {
+			var authToken = uuid.NewString()
+			c.Locals("token", authToken)
+			c.Set("token", authToken)
+		}
+		return c.Next()
+	})
 
 	app.Use(logger.New())
 	app.Use(compress.New(compress.Config{
@@ -41,12 +49,8 @@ func setupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 
 	app.Static("/upsized", "./upsized")
 
-	app.Get("/about", func(c *fiber.Ctx) error {
-		return c.SendString("about")
-	})
-
-	var shaDecoder = sha512.New()
 	app.Post("/upsize", func(c *fiber.Ctx) error {
+		var shaDecoder = sha512.New()
 		var imagePath string
 		var imageSHA string
 
@@ -104,31 +108,48 @@ func setupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 		return c.Status(http.StatusOK).SendString("queued")
 	})
 
-	app.Use("/results", func(c *fiber.Ctx) error {
+	app.Use("/results/:token", func(c *fiber.Ctx) error {
+		if token, ok := c.Locals("token").(string); ok {
+			if c.Params("token") != token {
+				return c.SendStatus(http.StatusUnauthorized)
+			}
+		}
 		if websocket.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)
 			return c.Next()
 		}
 		return fiber.ErrUpgradeRequired
 	})
-	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+	app.Get("/results/:token", websocket.New(func(c *websocket.Conn) {
+		var shaDecoder = sha512.New()
 		var allowed, ok = c.Locals("allowed").(bool)
 		if ok && allowed {
+			for upsizedImage := range upsizedImages {
+				var imageBytes, err = ioutil.ReadFile(upsizedImage)
+				if err != nil {
+					log.Errorf("ws error: %s", err.Error())
+					// TODO
+				}
 
-		}
+				// send the file name
+				if err = c.WriteMessage(websocket.TextMessage, []byte("filepath:"+filepath.Base(upsizedImage))); err != nil {
+					log.Errorf("ws error: %s", err.Error())
+				}
 
-		for upsizedImage := range upsizedImages {
-			var imageBytes, err = ioutil.ReadFile(upsizedImage)
-			if err != nil {
-				log.Errorf("ws error: %s", err.Error())
+				// send the image
+				if err = c.WriteMessage(websocket.BinaryMessage, imageBytes); err != nil {
+					log.Errorf("ws error: %s", err.Error())
+				}
+
+				// send the sha
+				shaDecoder.Write(imageBytes)
+				var sum = hex.EncodeToString(shaDecoder.Sum(nil))
+				if err = c.WriteMessage(websocket.TextMessage, []byte("sha512:"+sum)); err != nil {
+					log.Errorf("ws error: %s", err.Error())
+				}
+				shaDecoder.Reset()
 			}
-			var encodedImage []byte
-			base64.StdEncoding.Encode(encodedImage, imageBytes)
-			if err = c.WriteMessage(websocket.BinaryMessage, append(base64Prefix, encodedImage...)); err != nil {
-				log.Errorf("ws error: %s", err.Error())
-			}
 		}
-
 	}))
 
 	return app
