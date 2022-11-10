@@ -6,7 +6,7 @@ import (
 )
 
 func runWorkers(cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan string) {
-
+	defer close(upsizedImages)
 	var errorChans = make([]chan error, numGPUs+1)
 	for i := 0; i <= numGPUs; i++ {
 		// realesrgan has a bug that does not recognize gpu id 1, so it is always skipped

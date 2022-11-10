@@ -33,7 +33,7 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsized
 		var upsizedImage = filepath.Base(image)
 		upsizedImage = filepath.Join(outputPath, strings.Replace(upsizedImage, filepath.Ext(upsizedImage), ".png", 1))
 
-		log.Trace(cmdPath, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", image, " -o ", upsizedImage)
+		log.Info(cmdPath, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", image, " -o ", upsizedImage)
 
 		var cmd = exec.Command(cmdPath, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", image, "-o", upsizedImage)
 		var out bytes.Buffer
@@ -44,7 +44,7 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsized
 		var start = time.Now()
 		var err = cmd.Run()
 		if err != nil {
-			errors <- fmt.Errorf("error running command, stderr: %s, go err: %w", stderr.String(), err)
+			errors <- fmt.Errorf("error running command, stderr: %s, stdout: %s, go err: %w", cmd.Stderr, cmd.Stdout, err)
 		}
 		upsizeTime.Set(float64(time.Since(start)))
 

@@ -63,7 +63,6 @@ func setupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 
 		if imageArr := form.File["image"]; len(imageArr) == 1 {
 			// write the file
-			log.Info(imageArr[0].Filename, imageArr[0].Size, imageArr[0].Header["Content-Type"][0])
 			if err := c.SaveFile(imageArr[0], filepath.Join(imageDir, imageArr[0].Filename)); err != nil {
 				log.Errorf("unable to write image to disk, err: %s", err.Error())
 				return c.Status(http.StatusInternalServerError).SendString("unable to write image to disk, err: " + err.Error())
@@ -101,7 +100,7 @@ func setupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 			return c.Status(http.StatusBadRequest).SendString("image needs to be one value, was: " + strconv.Itoa(len(imageArr)))
 		}
 
-		originalImages <- filepath.Join(imageDir, imagePath)
+		originalImages <- imagePath
 		return c.Status(http.StatusOK).SendString("queued")
 	})
 
