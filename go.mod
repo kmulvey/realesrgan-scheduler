@@ -5,8 +5,9 @@ go 1.19
 require (
 	github.com/gofiber/fiber/v2 v2.39.0
 	github.com/gofiber/websocket/v2 v2.1.1
+	github.com/google/uuid v1.3.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/kmulvey/goutils v0.6.0
-	github.com/kmulvey/path v0.9.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
 	go.szostok.io/version v1.1.0
@@ -27,7 +28,6 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/goccy/go-yaml v1.9.5 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect

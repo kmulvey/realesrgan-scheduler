@@ -69,11 +69,11 @@ func main() {
 	var originalImages = make(chan string, 1000)
 	var upsizedImages = make(chan string, 1000)
 
-	go func() {
-		for img := range upsizedImages {
-			log.Info(img)
-		}
-	}()
+	//go func() {
+	//	for img := range upsizedImages {
+	//		log.Info(img)
+	//	}
+	//}()
 	go runWorkers(realesrganPath, upscaledImages, 0, originalImages, upsizedImages)
 
 	var app = setupWebServer(originalImages, upsizedImages, uploadedImages, username, password)
