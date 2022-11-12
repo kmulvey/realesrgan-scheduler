@@ -2,10 +2,11 @@ package main
 
 import (
 	"github.com/kmulvey/goutils"
+	"github.com/kmulvey/path"
 	log "github.com/sirupsen/logrus"
 )
 
-func runWorkers(cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan string) {
+func runWorkers(cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan path.Entry) {
 	defer close(upsizedImages)
 	var errorChans = make([]chan error, numGPUs+1)
 	for i := 0; i <= numGPUs; i++ {

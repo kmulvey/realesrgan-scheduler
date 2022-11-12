@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/kmulvey/path"
 	log "github.com/sirupsen/logrus"
@@ -69,22 +68,22 @@ func main() {
 		log.Fatalf("error creating upscale dir: %s", err.Error())
 	}
 
-	var originalImages = make(chan string, 1000)
-	var upsizedImages = make(chan string, 1000)
+	var originalImages = make(chan path.Entry, 1000)
+	var upsizedImages = make(chan path.Entry, 1000)
 
 	go runWorkers(realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, originalImages, upsizedImages)
 
 	if http {
-		var app = setupWebServer(originalImages, upsizedImages, inputImages.ComputedPath.AbsolutePath, username, password)
-		log.WithFields(log.Fields{
-			"webserver port": port,
-		}).Info("started")
-		app.Listen(":" + strconv.Itoa(port))
+		//var app = setupWebServer(originalImages, upsizedImages, inputImages.ComputedPath.AbsolutePath, username, password)
+		//log.WithFields(log.Fields{
+		//	"webserver port": port,
+		//}).Info("started")
+		//app.Listen(":" + strconv.Itoa(port))
 	} else {
 		go func() {
 			for img := range upsizedImages {
 				log.WithFields(log.Fields{
-					"upsized": img,
+					"upsized": img.AbsolutePath,
 				}).Info("upsized")
 			}
 		}()
