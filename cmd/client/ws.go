@@ -16,7 +16,7 @@ import (
 	"go.szostok.io/version/printer"
 )
 
-func main() {
+func NOTmain() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
