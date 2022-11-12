@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kmulvey/path"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,36 +27,37 @@ var upsizeTime = prometheus.NewGauge(
 	},
 )
 
-func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsizedImages chan string, errors chan error) {
+func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsizedImages chan path.Entry, errors chan error) {
 	defer close(errors)
 
 	var outputExt = "jpg"
 
 	for image := range originalImages {
 		// image is the abs path
-		var upsizedImage = filepath.Base(image)
-		upsizedImage = filepath.Join(outputPath, strings.Replace(upsizedImage, filepath.Ext(upsizedImage), "."+outputExt, 1))
+		var upsizedImage = image
+		upsizedImage.AbsolutePath = filepath.Base(image.AbsolutePath)
+		upsizedImage.AbsolutePath = filepath.Join(outputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
 
-		if stat, _ := os.Stat(upsizedImage); stat != nil {
-			var err = os.Remove(image)
+		if stat, _ := os.Stat(upsizedImage.AbsolutePath); stat != nil {
+			var err = os.Remove(image.AbsolutePath)
 			if err != nil {
 				errors <- fmt.Errorf("error removing original file after upscale, err: %w", err)
 			}
 			log.WithFields(log.Fields{
-				"queue length": len(originalImages),
-				"original":     image,
-				"upsized":      upsizedImage,
+				"queue length": len(originalImages) + 1,
+				"original":     image.AbsolutePath,
+				"upsized":      upsizedImage.AbsolutePath,
 			}).Info("already exists, skipping and deleting original")
 			continue
 		}
 
 		log.Trace(cmdPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", image, " -o ", upsizedImage)
 		log.WithFields(log.Fields{
-			"queue length": len(originalImages),
-			"original":     image,
+			"queue length": len(originalImages) + 1,
+			"original":     image.AbsolutePath,
 		}).Info("upscaling")
 
-		var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", image, "-o", upsizedImage)
+		var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", image.AbsolutePath, "-o", upsizedImage.AbsolutePath)
 		var out bytes.Buffer
 		var stderr bytes.Buffer
 		cmd.Stdout = &out
@@ -68,7 +70,7 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsized
 		}
 		upsizeTime.Set(float64(time.Since(start)))
 
-		err = os.Remove(image)
+		err = os.Remove(image.AbsolutePath)
 		if err != nil {
 			errors <- fmt.Errorf("error removing original file after upscale, err: %w", err)
 		}
