@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/kmulvey/path"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
 	"go.szostok.io/version/printer"
@@ -22,21 +23,23 @@ func main() {
 	})
 
 	// get the user options
-	var uploadedImages string
-	var upscaledImages string
+	var inputImages path.Path
+	var upscaledImages path.Path
 	var realesrganPath string
 	var username string
 	var password string
+	var http bool
 	var threads int
 	var port int
 	var v bool
 	var h bool
 
-	flag.StringVar(&uploadedImages, "uploaded-images-dir", "upload", "where to store the uploaded images")
-	flag.StringVar(&upscaledImages, "upscaled-images-dir", "upscaled", "where to store the upscaled images")
+	flag.Var(&inputImages, "uploaded-images-dir", "where to store the uploaded images")
+	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
 	flag.StringVar(&realesrganPath, "realesrgan-path", "realesrgan-ncnn-vulkan", "where the realesrgan binary is")
 	flag.StringVar(&username, "username", "", "username for the webserver")
 	flag.StringVar(&password, "password", "", "password for the webserver")
+	flag.BoolVar(&http, "http", false, "true to run in webserver mode")
 	flag.IntVar(&threads, "threads", 1, "number of gpus")
 	flag.IntVar(&port, "port", 3000, "port number for the webserver")
 	flag.BoolVar(&v, "version", false, "print version")
@@ -58,26 +61,41 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err := mkdir(uploadedImages); err != nil {
+	if err := mkdir(inputImages.ComputedPath.AbsolutePath); err != nil {
 		log.Fatalf("error creating upload dir: %s", err.Error())
 	}
 
-	if err := mkdir(upscaledImages); err != nil {
+	if err := mkdir(upscaledImages.ComputedPath.AbsolutePath); err != nil {
 		log.Fatalf("error creating upscale dir: %s", err.Error())
 	}
 
 	var originalImages = make(chan string, 1000)
 	var upsizedImages = make(chan string, 1000)
 
-	//go func() {
-	//	for img := range upsizedImages {
-	//		log.Info(img)
-	//	}
-	//}()
-	go runWorkers(realesrganPath, upscaledImages, 0, originalImages, upsizedImages)
+	go runWorkers(realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, originalImages, upsizedImages)
 
-	var app = setupWebServer(originalImages, upsizedImages, uploadedImages, username, password)
-	app.Listen(":" + strconv.Itoa(port))
+	if http {
+		var app = setupWebServer(originalImages, upsizedImages, inputImages.ComputedPath.AbsolutePath, username, password)
+		log.WithFields(log.Fields{
+			"webserver port": port,
+		}).Info("started")
+		app.Listen(":" + strconv.Itoa(port))
+	} else {
+		go func() {
+			for img := range upsizedImages {
+				log.WithFields(log.Fields{
+					"upsized": img,
+				}).Info("upsized")
+			}
+		}()
+
+		log.WithFields(log.Fields{
+			"watching directory": inputImages.ComputedPath.AbsolutePath,
+		}).Info("started")
+		if err := watchDir(inputImages.ComputedPath.AbsolutePath, originalImages); err != nil {
+			log.Fatalf("error in watchDir: %s", err)
+		}
+	}
 }
 
 func mkdir(path string) error {

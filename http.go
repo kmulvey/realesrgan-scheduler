@@ -17,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/websocket/v2"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -25,27 +26,40 @@ import (
 
 func setupWebServer(originalImages, upsizedImages chan string, imageDir, username, password string) *fiber.App {
 	app := fiber.New()
-
-	app.Use("/upsize*", basicauth.New(basicauth.Config{
-		Users: map[string]string{
-			username: password,
-		},
-	}))
-	app.Use(func(c *fiber.Ctx) error {
-		if _, ok := c.Locals("username").(string); ok {
-			var authToken = uuid.NewString()
-			c.Locals("token", authToken)
-			c.Set("token", authToken)
-		}
-		return c.Next()
-	})
+	sessionStore := session.New()
 
 	app.Use(logger.New())
+
 	app.Use(compress.New(compress.Config{
 		Level: compress.LevelBestSpeed,
 	}))
 
 	app.Static("/upscaled", "./upscaled")
+
+	var authMiddleware = basicauth.New(basicauth.Config{
+		Users: map[string]string{
+			username: password,
+		},
+	})
+	app.Use("/upscale*", authMiddleware)
+	app.Use("/login", authMiddleware)
+
+	// generate a token and put it in the session
+	app.Use(func(c *fiber.Ctx) error {
+		// Locals username is created as part of the auth middleware ^^ automatically
+		if _, ok := c.Locals("username").(string); ok {
+			sess, err := sessionStore.Get(c)
+			if err != nil {
+				log.Errorf("error getting session, err: %s", err.Error())
+				return c.SendStatus(http.StatusInternalServerError)
+			}
+
+			var authToken = uuid.NewString()
+			sess.Set("token", authToken) // put it in the session so we can check it
+			c.Set("token", authToken)    // put it in a header so they can use it for the next req
+		}
+		return c.Next()
+	})
 
 	app.Post("/upscale", func(c *fiber.Ctx) error {
 		var shaDecoder = sha512.New()
