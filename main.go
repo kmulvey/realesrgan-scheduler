@@ -4,9 +4,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/kmulvey/path"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
 	"go.szostok.io/version/printer"
@@ -20,6 +23,17 @@ func main() {
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		s := &http.Server{
+			Addr:           ":6000",
+			ReadTimeout:    10 * time.Second,
+			WriteTimeout:   10 * time.Second,
+			MaxHeaderBytes: 1 << 20,
+		}
+		log.Fatal(s.ListenAndServe())
+	}()
 
 	// get the user options
 	var inputImages path.Path
@@ -81,10 +95,7 @@ func main() {
 		//app.Listen(":" + strconv.Itoa(port))
 	} else {
 		go func() {
-			for img := range upsizedImages {
-				log.WithFields(log.Fields{
-					"upsized": img.AbsolutePath,
-				}).Info("upsized")
+			for range upsizedImages {
 			}
 		}()
 
