@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -66,9 +67,16 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsized
 		var start = time.Now()
 		var err = cmd.Run()
 		if err != nil {
-			errors <- fmt.Errorf("error running command, stderr: %s, stdout: %s, go err: %w", cmd.Stderr, cmd.Stdout, err)
+			errors <- fmt.Errorf("error running upsize command on file %s, stderr: %s, stdout: %s, go err: %w", image.AbsolutePath, cleanStdErr(out.String()), cmd.Stdout, err)
+			continue
 		}
-		upsizeTime.Set(float64(time.Since(start)))
+		var duration = time.Since(start)
+		upsizeTime.Set(float64(duration))
+
+		log.WithFields(log.Fields{
+			"upsized":  upsizedImage.AbsolutePath,
+			"duration": duration,
+		}).Info("upsized")
 
 		err = os.Remove(image.AbsolutePath)
 		if err != nil {
@@ -77,4 +85,20 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsized
 
 		upsizedImages <- upsizedImage
 	}
+}
+
+func cleanStdErr(err string) string {
+
+	var builder = strings.Builder{}
+	var scanner = bufio.NewScanner(strings.NewReader(err))
+
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		var line = scanner.Text()
+		if !strings.HasSuffix(line, "%") {
+			builder.WriteString(line)
+		}
+	}
+	return builder.String()
 }
