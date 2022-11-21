@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func runWorkers(cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan path.Entry) {
+func runWorkers(cmdPath, outputPath string, numGPUs int, originalImages chan path.WatchEvent, upsizedImages chan path.Entry) {
 	defer close(upsizedImages)
 	var errorChans = make([]chan error, numGPUs+1)
 	for i := 0; i <= numGPUs; i++ {
