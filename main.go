@@ -82,7 +82,7 @@ func main() {
 		log.Fatalf("error creating upscale dir: %s", err.Error())
 	}
 
-	var originalImages = make(chan path.Entry, 1000)
+	var originalImages = make(chan path.WatchEvent, 1000)
 	var upsizedImages = make(chan path.Entry, 1000)
 
 	go runWorkers(realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, originalImages, upsizedImages)

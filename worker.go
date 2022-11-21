@@ -28,14 +28,15 @@ var upsizeTime = prometheus.NewGauge(
 	},
 )
 
-func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsizedImages chan path.Entry, errors chan error) {
+func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan path.WatchEvent, upsizedImages chan path.Entry, errors chan error) {
 	defer close(errors)
 
 	var outputExt = "jpg"
 
 	for image := range originalImages {
+
 		// image is the abs path
-		var upsizedImage = image
+		var upsizedImage = image.Entry
 		upsizedImage.AbsolutePath = filepath.Base(image.AbsolutePath)
 		upsizedImage.AbsolutePath = filepath.Join(outputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
 
