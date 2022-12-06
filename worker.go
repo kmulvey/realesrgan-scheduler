@@ -46,7 +46,7 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan pat
 				errors <- fmt.Errorf("error removing original file after upscale, err: %w", err)
 			}
 			log.WithFields(log.Fields{
-				"queue length": len(originalImages) + 1,
+				"queue length": len(originalImages),
 				"original":     image.AbsolutePath,
 				"upsized":      upsizedImage.AbsolutePath,
 			}).Info("already exists, skipping and deleting original")
@@ -55,7 +55,7 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan pat
 
 		log.Trace(cmdPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", image, " -o ", upsizedImage)
 		log.WithFields(log.Fields{
-			"queue length": len(originalImages) + 1,
+			"queue length": len(originalImages) + 1, // + 1 here because its currently being processed
 			"original":     image.AbsolutePath,
 		}).Info("upscaling")
 
@@ -75,8 +75,9 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan pat
 		upsizeTime.Set(float64(duration))
 
 		log.WithFields(log.Fields{
-			"upsized":  upsizedImage.AbsolutePath,
-			"duration": duration,
+			"queue length": len(originalImages),
+			"upsized":      upsizedImage.AbsolutePath,
+			"duration":     duration,
 		}).Info("upsized")
 
 		err = os.Remove(image.AbsolutePath)
