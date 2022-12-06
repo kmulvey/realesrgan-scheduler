@@ -1,21 +1,16 @@
 package main
 
 import (
-	"context"
 	"regexp"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kmulvey/path"
 )
 
-func watchDir(dir string, originalImages chan path.WatchEvent) error {
-	var ctx = context.Background()
-	var suffixRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$")
-	var suffixRegexFilter = path.NewRegexWatchFilter(suffixRegex)
-	var opFilter = path.NewOpWatchFilter(fsnotify.Create)
+func getExistingFiles(dir string, originalImages chan path.WatchEvent) error {
 
 	// get any files that may already be in the dir because they will not trigger events
-	var files, err = path.ListFilesWithFilter(dir, suffixRegex)
+	var files, err = path.ListFiles(dir, path.NewRegexFilesFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$")))
 	if err != nil {
 		return err
 	}
@@ -23,5 +18,5 @@ func watchDir(dir string, originalImages chan path.WatchEvent) error {
 		originalImages <- path.WatchEvent{Entry: f, Op: fsnotify.Create}
 	}
 
-	return path.WatchDir(ctx, dir, originalImages, opFilter, suffixRegexFilter)
+	return nil
 }
