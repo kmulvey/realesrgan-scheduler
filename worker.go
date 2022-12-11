@@ -28,7 +28,7 @@ var upsizeTime = prometheus.NewGauge(
 	},
 )
 
-func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan path.WatchEvent, upsizedImages chan path.Entry, errors chan error) {
+func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages, upsizedImages chan path.Entry, errors chan error) {
 	defer close(errors)
 
 	var outputExt = "jpg"
@@ -36,7 +36,7 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan pat
 	for image := range originalImages {
 
 		// image is the abs path
-		var upsizedImage = image.Entry
+		var upsizedImage = image
 		upsizedImage.AbsolutePath = filepath.Base(image.AbsolutePath)
 		upsizedImage.AbsolutePath = filepath.Join(outputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
 
@@ -46,17 +46,19 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan pat
 				errors <- fmt.Errorf("error removing original file after upscale, err: %w", err)
 			}
 			log.WithFields(log.Fields{
-				"queue length": len(originalImages),
-				"original":     image.AbsolutePath,
-				"upsized":      upsizedImage.AbsolutePath,
+				"queue length":  len(originalImages),
+				"original":      image.AbsolutePath,
+				"original size": prettyPrintFileSizes(image.FileInfo.Size()),
+				"upsized":       upsizedImage.AbsolutePath,
 			}).Info("already exists, skipping and deleting original")
 			continue
 		}
 
 		log.Trace(cmdPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", image, " -o ", upsizedImage)
 		log.WithFields(log.Fields{
-			"queue length": len(originalImages) + 1, // + 1 here because its currently being processed
-			"original":     image.AbsolutePath,
+			"queue length":  len(originalImages) + 1, // + 1 here because its currently being processed
+			"original":      image.AbsolutePath,
+			"original size": prettyPrintFileSizes(image.FileInfo.Size()),
 		}).Info("upscaling")
 
 		var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", image.AbsolutePath, "-o", upsizedImage.AbsolutePath)
@@ -75,9 +77,10 @@ func upsizeWorker(cmdPath, outputPath string, gpuID int, originalImages chan pat
 		upsizeTime.Set(float64(duration))
 
 		log.WithFields(log.Fields{
-			"queue length": len(originalImages),
-			"upsized":      upsizedImage.AbsolutePath,
-			"duration":     duration,
+			"queue length":  len(originalImages),
+			"upsized":       upsizedImage.AbsolutePath,
+			"original size": prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
+			"duration":      duration,
 		}).Info("upsized")
 
 		err = os.Remove(image.AbsolutePath)
@@ -103,4 +106,20 @@ func cleanStdErr(err string) string {
 		}
 	}
 	return builder.String()
+}
+
+func prettyPrintFileSizes(filesize int64) string {
+	if filesize < 1_000 {
+		return strconv.Itoa(int(filesize)) + " bytes"
+	} else if filesize < 1_000_000 {
+		filesize /= 1_000
+		return strconv.Itoa(int(filesize)) + " kb"
+	} else if filesize < 1_000_000_000 {
+		filesize /= 1_000_000
+		return strconv.Itoa(int(filesize)) + " mb"
+	} else if filesize < 1_000_000_000_000 {
+		filesize /= 1_000_000_000
+		return strconv.Itoa(int(filesize)) + " gb"
+	}
+	return ""
 }
