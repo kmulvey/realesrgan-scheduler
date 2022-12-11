@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/kmulvey/path"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -18,6 +21,8 @@ import (
 var promNamespace = "realesrgan_scheduler"
 
 func main() {
+
+	var ctx, cancel = context.WithCancel(context.Background())
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -44,6 +49,7 @@ func main() {
 	var http bool
 	var threads int
 	var port int
+	var daemon bool
 	var v bool
 	var h bool
 
@@ -55,9 +61,10 @@ func main() {
 	flag.BoolVar(&http, "http", false, "true to run in webserver mode")
 	flag.IntVar(&threads, "threads", 1, "number of gpus")
 	flag.IntVar(&port, "port", 3000, "port number for the webserver")
+	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
 	flag.BoolVar(&v, "version", false, "print version")
 	flag.BoolVar(&v, "v", false, "print version")
-	flag.BoolVar(&v, "help", false, "print options")
+	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
 
 	if h {
@@ -83,9 +90,11 @@ func main() {
 	}
 
 	var originalImages = make(chan path.WatchEvent, 1000)
+	var entries = watchEventToEntry(originalImages)
+	var dedupedImages = dedupMiddleware(upscaledImages.ComputedPath.AbsolutePath, entries)
 	var upsizedImages = make(chan path.Entry, 1000)
 
-	go runWorkers(realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, originalImages, upsizedImages)
+	go runWorkers(realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, dedupedImages, upsizedImages)
 
 	if http {
 		//var app = setupWebServer(originalImages, upsizedImages, inputImages.ComputedPath.AbsolutePath, username, password)
@@ -94,6 +103,7 @@ func main() {
 		//}).Info("started")
 		//app.Listen(":" + strconv.Itoa(port))
 	} else {
+		// we dont need upsizedImages in this mode but we still need to drain the chan
 		go func() {
 			for range upsizedImages {
 			}
@@ -102,10 +112,18 @@ func main() {
 		log.WithFields(log.Fields{
 			"watching directory": inputImages.ComputedPath.AbsolutePath,
 		}).Info("started")
-		if err := watchDir(inputImages.ComputedPath.AbsolutePath, originalImages); err != nil {
-			log.Fatalf("error in watchDir: %s", err)
+
+		if err := getExistingFiles(inputImages.ComputedPath.AbsolutePath, originalImages); err != nil {
+			log.Fatalf("error in :getExistingFiles %s", err)
+		}
+
+		if daemon {
+			if err := path.WatchDir(ctx, inputImages.ComputedPath.AbsolutePath, originalImages, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$"))); err != nil {
+				log.Fatalf("error in watchDir: %s", err)
+			}
 		}
 	}
+	cancel()
 }
 
 func mkdir(path string) error {
