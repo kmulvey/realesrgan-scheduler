@@ -4,29 +4,50 @@ import (
 	"container/list"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/kmulvey/path"
 )
 
-var zeroFile path.Entry
-
-func init() {
-	zeroFile, _ = path.NewEntry("./testfiles/zero")
+type Queue struct {
+	Queue     *list.List
+	QueueLock sync.RWMutex
 }
 
-// Dedup files based on abs path
-// Insert in size order
-//   - empty? insert
-//   - is it between this and next? insert
-func Add(list *list.List, newImage path.Entry) error {
+func NewQueue() Queue {
+	return Queue{Queue: list.New()}
+}
+
+// NextImage returns the path.Entry for the image at the front of the queue.
+// If there are no more entires it will return an empty path.Entry, as such you will need to check its value.
+func (q *Queue) NextImage() path.Entry {
+
+	q.QueueLock.Lock()
+	defer q.QueueLock.Unlock()
+
+	var next = q.Queue.Front()
+	if next == nil {
+		return path.Entry{}
+	}
+
+	var nextImage, _ = next.Value.(path.Entry) // we dont bother checking if the cast went well because there is no way you could have pushed a non Entry on anyway
+
+	return nextImage
+}
+
+// Add dedup files based on abs path and adds the given image to the list in size order.
+func (q *Queue) Add(newImage path.Entry) error {
+
+	q.QueueLock.Lock()
+	defer q.QueueLock.Unlock()
 
 	// init
-	if list.Len() == 0 {
-		list.PushFront(newImage)
+	if q.Queue.Len() == 0 {
+		q.Queue.PushFront(newImage)
 		return nil
 	}
 
-	for currElement := list.Front(); currElement != nil; currElement = currElement.Next() {
+	for currElement := q.Queue.Front(); currElement != nil; currElement = currElement.Next() {
 
 		// this should never happen but we check it for checking's sake
 		var currEntry, ok = currElement.Value.(path.Entry)
@@ -45,13 +66,13 @@ func Add(list *list.List, newImage path.Entry) error {
 		if newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && hasNext {
 			continue
 		} else if newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && !hasNext {
-			list.InsertAfter(newImage, currElement)
+			q.Queue.InsertAfter(newImage, currElement)
 			break
 		} else if newImage.FileInfo.Size() <= currEntry.FileInfo.Size() {
-			list.InsertBefore(newImage, currElement)
+			q.Queue.InsertBefore(newImage, currElement)
 			break
 		} else {
-			list.InsertBefore(newImage, currElement)
+			q.Queue.InsertBefore(newImage, currElement)
 			break
 		}
 	}
