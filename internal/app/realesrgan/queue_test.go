@@ -1,0 +1,119 @@
+package realesrgan
+
+import (
+	"container/list"
+	"testing"
+
+	"github.com/kmulvey/path"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestAdd(t *testing.T) {
+	var queue = list.New()
+
+	var small, err = path.NewEntry("./testfiles/small")
+	assert.NoError(t, err)
+
+	medium, err := path.NewEntry("./testfiles/medium")
+	assert.NoError(t, err)
+
+	large, err := path.NewEntry("./testfiles/large")
+	assert.NoError(t, err)
+
+	assert.NoError(t, Add(queue, small))
+	assert.Equal(t, small, queue.Front().Value)
+	assert.Equal(t, 1, queue.Len())
+
+	assert.NoError(t, Add(queue, medium))
+	assert.Equal(t, small, queue.Front().Value)
+	assert.Equal(t, medium, queue.Back().Value)
+	assert.Equal(t, 2, queue.Len())
+
+	assert.NoError(t, Add(queue, large))
+	validateAll(t, queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, Add(queue, small))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, large))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, medium))
+	validateAll(t, queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, Add(queue, medium))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, small))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, large))
+	validateAll(t, queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, Add(queue, medium))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, large))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, small))
+	validateAll(t, queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, Add(queue, large))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, small))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, medium))
+	validateAll(t, queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, Add(queue, large))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, medium))
+	validateAll(t, queue, small, medium, large)
+
+	assert.NoError(t, Add(queue, small))
+	validateAll(t, queue, small, medium, large)
+
+}
+
+// elementAt returns the element from the list at the given position
+func elementAt(l *list.List, index int) *list.Element {
+	var i int
+	for currFile := l.Front(); currFile != nil; currFile = currFile.Next() {
+		if i == index {
+			return currFile
+		}
+		i++
+	}
+	return nil
+}
+
+// validateAll runs asserts on the whole list, to reduce code repetition
+func validateAll(t *testing.T, queue *list.List, small, medium, large path.Entry) {
+	assert.Equal(t, small, queue.Front().Value)
+	assert.Equal(t, medium, elementAt(queue, 1).Value)
+	assert.Equal(t, large, queue.Back().Value)
+	assert.Equal(t, 3, queue.Len())
+}
+
+// dumper prints the whole list, only use in debugging
+// func dumper(l *list.List) {
+// 	for currFile := l.Front(); currFile != nil; currFile = currFile.Next() {
+
+// 		var currEntry, _ = currFile.Value.(path.Entry)
+// 		fmt.Printf("name: %s, size: %d \n", currEntry.FileInfo.Name(), currEntry.FileInfo.Size())
+// 	}
+// }
