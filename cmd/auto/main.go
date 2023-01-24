@@ -10,11 +10,15 @@ import (
 	"time"
 
 	"github.com/kmulvey/path"
+	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
+	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
 	"go.szostok.io/version/printer"
 )
+
+const promNamespace = "realesrgan-scheduler"
 
 func main() {
 
@@ -76,10 +80,19 @@ func main() {
 	}
 
 	fmt.Println("before getExistingFiles")
-	if err := getExistingFiles(inputImages.ComputedPath.AbsolutePath, originalImages); err != nil {
-		log.Fatalf("error in :getExistingFiles %s", err)
+	var existingFiles, err = fs.GetExistingFiles(inputImages.ComputedPath.AbsolutePath)
+	if err != nil {
+		log.Fatalf("error in: getExistingFiles %s", err)
 	}
 
+	rl, err := local.NewRealesrganLocal(promNamespace, existingFiles)
+	if err != nil {
+		log.Fatalf("error in: NewRealesrganLocal %s", err)
+	}
+
+	rl.Run(ctx, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0)
+
+	cancel()
 }
 
 func mkdir(path string) error {
