@@ -1,4 +1,4 @@
-package realesrgan
+package queue
 
 import (
 	"container/list"
