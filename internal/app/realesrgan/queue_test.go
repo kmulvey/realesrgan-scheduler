@@ -9,7 +9,7 @@ import (
 )
 
 func TestAdd(t *testing.T) {
-	var queue = list.New()
+	var queue = NewQueue()
 
 	var small, err = path.NewEntry("./testfiles/small")
 	assert.NoError(t, err)
@@ -20,72 +20,72 @@ func TestAdd(t *testing.T) {
 	large, err := path.NewEntry("./testfiles/large")
 	assert.NoError(t, err)
 
-	assert.NoError(t, Add(queue, small))
-	assert.Equal(t, small, queue.Front().Value)
-	assert.Equal(t, 1, queue.Len())
+	assert.NoError(t, queue.Add(small))
+	assert.Equal(t, small, queue.Queue.Front().Value)
+	assert.Equal(t, 1, queue.Queue.Len())
 
-	assert.NoError(t, Add(queue, medium))
-	assert.Equal(t, small, queue.Front().Value)
-	assert.Equal(t, medium, queue.Back().Value)
-	assert.Equal(t, 2, queue.Len())
+	assert.NoError(t, queue.Add(medium))
+	assert.Equal(t, small, queue.Queue.Front().Value)
+	assert.Equal(t, medium, queue.Queue.Back().Value)
+	assert.Equal(t, 2, queue.Queue.Len())
 
-	assert.NoError(t, Add(queue, large))
-	validateAll(t, queue, small, medium, large)
-
-	////////////////////////////////////
-
-	assert.NoError(t, Add(queue, small))
-	validateAll(t, queue, small, medium, large)
-
-	assert.NoError(t, Add(queue, large))
-	validateAll(t, queue, small, medium, large)
-
-	assert.NoError(t, Add(queue, medium))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(large))
+	validateAll(t, &queue, small, medium, large)
 
 	////////////////////////////////////
 
-	assert.NoError(t, Add(queue, medium))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(small))
+	validateAll(t, &queue, small, medium, large)
 
-	assert.NoError(t, Add(queue, small))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(large))
+	validateAll(t, &queue, small, medium, large)
 
-	assert.NoError(t, Add(queue, large))
-	validateAll(t, queue, small, medium, large)
-
-	////////////////////////////////////
-
-	assert.NoError(t, Add(queue, medium))
-	validateAll(t, queue, small, medium, large)
-
-	assert.NoError(t, Add(queue, large))
-	validateAll(t, queue, small, medium, large)
-
-	assert.NoError(t, Add(queue, small))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(medium))
+	validateAll(t, &queue, small, medium, large)
 
 	////////////////////////////////////
 
-	assert.NoError(t, Add(queue, large))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(medium))
+	validateAll(t, &queue, small, medium, large)
 
-	assert.NoError(t, Add(queue, small))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(small))
+	validateAll(t, &queue, small, medium, large)
 
-	assert.NoError(t, Add(queue, medium))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(large))
+	validateAll(t, &queue, small, medium, large)
 
 	////////////////////////////////////
 
-	assert.NoError(t, Add(queue, large))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(medium))
+	validateAll(t, &queue, small, medium, large)
 
-	assert.NoError(t, Add(queue, medium))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(large))
+	validateAll(t, &queue, small, medium, large)
 
-	assert.NoError(t, Add(queue, small))
-	validateAll(t, queue, small, medium, large)
+	assert.NoError(t, queue.Add(small))
+	validateAll(t, &queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, queue.Add(large))
+	validateAll(t, &queue, small, medium, large)
+
+	assert.NoError(t, queue.Add(small))
+	validateAll(t, &queue, small, medium, large)
+
+	assert.NoError(t, queue.Add(medium))
+	validateAll(t, &queue, small, medium, large)
+
+	////////////////////////////////////
+
+	assert.NoError(t, queue.Add(large))
+	validateAll(t, &queue, small, medium, large)
+
+	assert.NoError(t, queue.Add(medium))
+	validateAll(t, &queue, small, medium, large)
+
+	assert.NoError(t, queue.Add(small))
+	validateAll(t, &queue, small, medium, large)
 
 }
 
@@ -102,11 +102,11 @@ func elementAt(l *list.List, index int) *list.Element {
 }
 
 // validateAll runs asserts on the whole list, to reduce code repetition
-func validateAll(t *testing.T, queue *list.List, small, medium, large path.Entry) {
-	assert.Equal(t, small, queue.Front().Value)
-	assert.Equal(t, medium, elementAt(queue, 1).Value)
-	assert.Equal(t, large, queue.Back().Value)
-	assert.Equal(t, 3, queue.Len())
+func validateAll(t *testing.T, queue *Queue, small, medium, large path.Entry) {
+	assert.Equal(t, small, queue.Queue.Front().Value)
+	assert.Equal(t, medium, elementAt(queue.Queue, 1).Value)
+	assert.Equal(t, large, queue.Queue.Back().Value)
+	assert.Equal(t, 3, queue.Queue.Len())
 }
 
 // dumper prints the whole list, only use in debugging

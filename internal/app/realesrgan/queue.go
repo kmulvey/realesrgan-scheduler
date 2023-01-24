@@ -10,8 +10,8 @@ import (
 )
 
 type Queue struct {
-	Queue     *list.List
-	QueueLock sync.RWMutex
+	Queue *list.List
+	Lock  sync.RWMutex
 }
 
 func NewQueue() Queue {
@@ -22,8 +22,8 @@ func NewQueue() Queue {
 // If there are no more entires it will return an empty path.Entry, as such you will need to check its value.
 func (q *Queue) NextImage() path.Entry {
 
-	q.QueueLock.Lock()
-	defer q.QueueLock.Unlock()
+	q.Lock.Lock()
+	defer q.Lock.Unlock()
 
 	var next = q.Queue.Front()
 	if next == nil {
@@ -38,8 +38,8 @@ func (q *Queue) NextImage() path.Entry {
 // Add dedup files based on abs path and adds the given image to the list in size order.
 func (q *Queue) Add(newImage path.Entry) error {
 
-	q.QueueLock.Lock()
-	defer q.QueueLock.Unlock()
+	q.Lock.Lock()
+	defer q.Lock.Unlock()
 
 	// init
 	if q.Queue.Len() == 0 {
