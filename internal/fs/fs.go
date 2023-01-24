@@ -1,4 +1,4 @@
-package local
+package fs
 
 import (
 	"os"
@@ -14,21 +14,25 @@ import (
 // ImageExtensionRegex are all the supported image extensions, and the only ones that will be included in file search/globbing.
 var ImageExtensionRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$|.*.JPG$|.*.JPEG$|.*.PNG$|.*.WEBP$")
 
-func GetExistingFiles(dir string, originalImages chan path.WatchEvent) error {
+// GetExistingFiles returns a slice of the existing files in the given directory.
+func GetExistingFiles(dir string) ([]path.WatchEvent, error) {
 
 	// get any files that may already be in the dir because they will not trigger events
 	var files, err = path.List(dir, path.NewRegexListFilter(ImageExtensionRegex))
 	if err != nil {
-		return err
-	}
-	for _, f := range files {
-		originalImages <- path.WatchEvent{Entry: f, Op: fsnotify.Create}
+		return nil, err
 	}
 
-	return nil
+	var existingFiles = make([]path.WatchEvent, len(files))
+	for i, f := range files {
+		existingFiles[i] = path.WatchEvent{Entry: f, Op: fsnotify.Create}
+	}
+
+	return existingFiles, nil
 }
 
-func watchEventToEntry(watchEvents chan path.WatchEvent) chan path.Entry {
+// WatchEventToEntry watches the given directory for new files.
+func WatchEventToEntry(watchEvents chan path.WatchEvent) chan path.Entry {
 	var output = make(chan path.Entry, 1000)
 
 	go func() {
