@@ -21,13 +21,13 @@ func TestAdd(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, queue.Add(small))
-	assert.Equal(t, small, queue.Queue.Front().Value)
-	assert.Equal(t, 1, queue.Queue.Len())
+	assert.Equal(t, small, queue.List.Front().Value)
+	assert.Equal(t, 1, queue.List.Len())
 
 	assert.NoError(t, queue.Add(medium))
-	assert.Equal(t, small, queue.Queue.Front().Value)
-	assert.Equal(t, medium, queue.Queue.Back().Value)
-	assert.Equal(t, 2, queue.Queue.Len())
+	assert.Equal(t, small, queue.List.Front().Value)
+	assert.Equal(t, medium, queue.List.Back().Value)
+	assert.Equal(t, 2, queue.List.Len())
 
 	assert.NoError(t, queue.Add(large))
 	validateAll(t, &queue, small, medium, large)
@@ -103,10 +103,10 @@ func elementAt(l *list.List, index int) *list.Element {
 
 // validateAll runs asserts on the whole list, to reduce code repetition
 func validateAll(t *testing.T, queue *Queue, small, medium, large path.Entry) {
-	assert.Equal(t, small, queue.Queue.Front().Value)
-	assert.Equal(t, medium, elementAt(queue.Queue, 1).Value)
-	assert.Equal(t, large, queue.Queue.Back().Value)
-	assert.Equal(t, 3, queue.Queue.Len())
+	assert.Equal(t, small, queue.List.Front().Value)
+	assert.Equal(t, medium, elementAt(queue.List, 1).Value)
+	assert.Equal(t, large, queue.List.Back().Value)
+	assert.Equal(t, 3, queue.List.Len())
 }
 
 // dumper prints the whole list, only use in debugging

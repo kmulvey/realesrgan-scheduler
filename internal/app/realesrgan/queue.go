@@ -10,12 +10,12 @@ import (
 )
 
 type Queue struct {
-	Queue *list.List
-	Lock  sync.RWMutex
+	*list.List
+	Lock sync.RWMutex
 }
 
 func NewQueue() Queue {
-	return Queue{Queue: list.New()}
+	return Queue{List: list.New()}
 }
 
 // NextImage returns the path.Entry for the image at the front of the queue.
@@ -25,7 +25,7 @@ func (q *Queue) NextImage() path.Entry {
 	q.Lock.Lock()
 	defer q.Lock.Unlock()
 
-	var next = q.Queue.Front()
+	var next = q.List.Front()
 	if next == nil {
 		return path.Entry{}
 	}
@@ -42,12 +42,12 @@ func (q *Queue) Add(newImage path.Entry) error {
 	defer q.Lock.Unlock()
 
 	// init
-	if q.Queue.Len() == 0 {
-		q.Queue.PushFront(newImage)
+	if q.List.Len() == 0 {
+		q.List.PushFront(newImage)
 		return nil
 	}
 
-	for currElement := q.Queue.Front(); currElement != nil; currElement = currElement.Next() {
+	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
 
 		// this should never happen but we check it for checking's sake
 		var currEntry, ok = currElement.Value.(path.Entry)
@@ -66,13 +66,13 @@ func (q *Queue) Add(newImage path.Entry) error {
 		if newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && hasNext {
 			continue
 		} else if newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && !hasNext {
-			q.Queue.InsertAfter(newImage, currElement)
+			q.List.InsertAfter(newImage, currElement)
 			break
 		} else if newImage.FileInfo.Size() <= currEntry.FileInfo.Size() {
-			q.Queue.InsertBefore(newImage, currElement)
+			q.List.InsertBefore(newImage, currElement)
 			break
 		} else {
-			q.Queue.InsertBefore(newImage, currElement)
+			q.List.InsertBefore(newImage, currElement)
 			break
 		}
 	}
