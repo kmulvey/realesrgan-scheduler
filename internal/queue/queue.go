@@ -13,6 +13,9 @@ import (
 type Queue struct {
 	*list.List
 	Lock sync.RWMutex
+	// RemovedImages helps us avoid a race condition of adding an image that is currently being processed because it will not be caught by fs.AlreadyExists().
+	// A map is used to facilitate thread safety as only having one "CurrImage" would not work with several workers running.
+	RemovedImages map[string]struct{}
 }
 
 // NewQueue is a simple constructor.
@@ -33,6 +36,8 @@ func (q *Queue) NextImage() path.Entry {
 	}
 
 	var nextImage, _ = next.Value.(path.Entry) // we dont bother checking if the cast went well because there is no way you could have pushed a non Entry on anyway
+
+	q.RemovedImages[nextImage.AbsolutePath] = struct{}{}
 
 	return nextImage
 }
