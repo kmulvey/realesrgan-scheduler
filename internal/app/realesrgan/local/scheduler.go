@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (rl RealesrganLocal) RunWorkers(ctx context.Context, cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan path.Entry) {
+func (rl *RealesrganLocal) RunWorkers(ctx context.Context, cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan path.Entry) {
 	defer close(upsizedImages)
 	var errorChans = make([]chan error, numGPUs+1)
 	for i := 0; i <= numGPUs; i++ {
