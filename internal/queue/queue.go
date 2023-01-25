@@ -9,11 +9,13 @@ import (
 	"github.com/kmulvey/path"
 )
 
+// Queue is an linked list ordered by file size and deduped.
 type Queue struct {
 	*list.List
 	Lock sync.RWMutex
 }
 
+// NewQueue is a simple constructor.
 func NewQueue() Queue {
 	return Queue{List: list.New()}
 }
