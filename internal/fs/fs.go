@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -54,6 +55,27 @@ func MakeDir(path string) error {
 		if err != nil {
 			return fmt.Errorf("error creating dir: %s, err: %w", path, err)
 		}
+	}
+	return nil
+}
+
+// WatchDir will watch the given dir for new files and will publish the ones not already upsized to
+// the given images chan.
+func WatchDir(ctx context.Context, inputDir, outputDir string, images chan path.Entry) error {
+
+	var events = make(chan path.WatchEvent)
+
+	go func() {
+		for e := range events {
+			if !AlreadyUpsized(e.Entry, outputDir) {
+				images <- e.Entry
+			}
+		}
+		close(images)
+	}()
+
+	if err := path.WatchDir(ctx, inputDir, events, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$"))); err != nil {
+		return fmt.Errorf("error in watchDir: %w", err)
 	}
 	return nil
 }
