@@ -2,6 +2,7 @@ package fs
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -42,4 +43,15 @@ func AlreadyUpsized(originalImage path.Entry, outputPath string) bool {
 	}
 
 	return true
+}
+
+// MakeDir will create a directory if it does not already exist.
+func MakeDir(path string) error {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(path, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("error creating dir: %s, err: %w", path, err)
+		}
+	}
+	return nil
 }
