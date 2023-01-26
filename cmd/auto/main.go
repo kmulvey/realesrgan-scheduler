@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
 	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
@@ -79,10 +80,14 @@ func main() {
 		log.Fatalf("error creating upscale dir: %s", err.Error())
 	}
 
-	fmt.Println("before getExistingFiles")
 	var existingFiles, err = fs.GetExistingFiles(inputImages.ComputedPath.AbsolutePath)
 	if err != nil {
 		log.Fatalf("error in: getExistingFiles %s", err)
+	}
+
+	var watchFiles = make(chan path.WatchEvent)
+	if err := path.WatchDir(ctx, inputImages.ComputedPath.AbsolutePath, watchFiles, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(fs.ImageExtensionRegex)); err != nil {
+		log.Fatalf("error in watchDir: %s", err)
 	}
 
 	rl, err := local.NewRealesrganLocal(promNamespace, existingFiles)
@@ -90,7 +95,8 @@ func main() {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
 
-	rl.Run(ctx, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0)
+	var errors = make(chan error)
+	rl.Run(ctx, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, watchFiles, errors)
 
 	cancel()
 }
