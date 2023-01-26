@@ -8,9 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// RunWorkers allows for the running of more than one worker thread at once for use with multiple gpus.
 func (rl *RealesrganLocal) RunWorkers(ctx context.Context, cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan path.Entry) {
+
 	defer close(upsizedImages)
-	var errorChans = make([]chan error, numGPUs+1)
+	var errorChans = make([]chan error, numGPUs)
+
 	for i := 0; i <= numGPUs; i++ {
 		// realesrgan has a bug that does not recognize gpu id 1, so it is always skipped
 		if i == 1 {
