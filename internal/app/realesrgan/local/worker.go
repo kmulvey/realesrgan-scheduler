@@ -1,7 +1,6 @@
 package local
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -20,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// UpsizeWorker does the actual upsizing work, it does so indefinatly and reads new images from the front of the queue.
 func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath string, gpuID int, errors chan error) {
 
 	defer close(errors)
@@ -88,23 +88,6 @@ func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath
 	}
 }
 
-// cleanStdErr removes a lot of progress logging that realesrgan outputs and it not exactly always accurarte, so we discard it for now.
-func cleanStdErr(err string) string {
-
-	var builder = strings.Builder{}
-	var scanner = bufio.NewScanner(strings.NewReader(err))
-
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		var line = scanner.Text()
-		if !strings.HasSuffix(line, "%") {
-			builder.WriteString(line)
-		}
-	}
-	return builder.String()
-}
-
 // prettyPrintFileSizes takes file sizes in int and returns a human readable size e.g. "140mb" as a string.
 func prettyPrintFileSizes(filesize int64) string {
 
@@ -123,6 +106,7 @@ func prettyPrintFileSizes(filesize int64) string {
 	return ""
 }
 
+// runCmdAndCaptureOutput runs the realesrgan command and captures stdout and passes it to logProgress for single line logging.
 func runCmdAndCaptureOutput(cmdPath, outputExt string, gpuID int, inputImage, upsizedImage path.Entry) error {
 
 	var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", inputImage.AbsolutePath, "-o", upsizedImage.AbsolutePath)
@@ -160,6 +144,7 @@ func runCmdAndCaptureOutput(cmdPath, outputExt string, gpuID int, inputImage, up
 	return nil
 }
 
+// logProgress prints the progress loges on a single updating line with uilive.
 func logProgress(r io.Reader) error {
 	writer := uilive.New()
 	// start listening for updates and render
