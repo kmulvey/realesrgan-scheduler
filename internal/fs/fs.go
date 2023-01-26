@@ -16,17 +16,19 @@ import (
 var ImageExtensionRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$|.*.JPG$|.*.JPEG$|.*.PNG$|.*.WEBP$")
 
 // GetExistingFiles returns a slice of the existing files in the given directory.
-func GetExistingFiles(dir string) ([]path.WatchEvent, error) {
+func GetExistingFiles(originalsDir, upsizedDir string) ([]path.WatchEvent, error) {
 
 	// get any files that may already be in the dir because they will not trigger events
-	var files, err = path.List(dir, path.NewRegexListFilter(ImageExtensionRegex))
+	var files, err = path.List(originalsDir, path.NewRegexListFilter(ImageExtensionRegex))
 	if err != nil {
 		return nil, err
 	}
 
 	var existingFiles = make([]path.WatchEvent, len(files))
 	for i, f := range files {
-		existingFiles[i] = path.WatchEvent{Entry: f, Op: fsnotify.Create}
+		if !AlreadyUpsized(f, upsizedDir) {
+			existingFiles[i] = path.WatchEvent{Entry: f, Op: fsnotify.Create}
+		}
 	}
 
 	return existingFiles, nil
