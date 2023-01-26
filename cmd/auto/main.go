@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
 	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
@@ -72,41 +71,37 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err := mkdir(inputImages.ComputedPath.AbsolutePath); err != nil {
-		log.Fatalf("error creating upload dir: %s", err.Error())
+	if _, err := os.Stat(inputImages.ComputedPath.AbsolutePath); errors.Is(err, os.ErrNotExist) {
+		log.Fatalf("input dir does not exist: %s", err.Error())
 	}
 
-	if err := mkdir(upscaledImages.ComputedPath.AbsolutePath); err != nil {
+	if err := fs.MakeDir(upscaledImages.ComputedPath.AbsolutePath); err != nil {
 		log.Fatalf("error creating upscale dir: %s", err.Error())
 	}
 
-	var existingFiles, err = fs.GetExistingFiles(inputImages.ComputedPath.AbsolutePath)
+	var upsizedDirs, err = path.List(inputImages.ComputedPath.AbsolutePath, path.NewDirListFilter())
 	if err != nil {
-		log.Fatalf("error in: getExistingFiles %s", err)
+		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	var watchFiles = make(chan path.WatchEvent)
-	if err := path.WatchDir(ctx, inputImages.ComputedPath.AbsolutePath, watchFiles, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(fs.ImageExtensionRegex)); err != nil {
-		log.Fatalf("error in watchDir: %s", err)
-	}
+	for _, upsizedDir := range upsizedDirs {
 
-	rl, err := local.NewRealesrganLocal(promNamespace, existingFiles)
-	if err != nil {
-		log.Fatalf("error in: NewRealesrganLocal %s", err)
-	}
+		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
+		var originalsDir = filepath.Join(inputImages.ComputedPath.AbsolutePath, upsizedBase, 1)
 
-	var errors = make(chan error)
-	rl.Run(ctx, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, watchFiles, errors)
+		var originalImages, err = fs.GetExistingFiles(originalsDir)
+		if err != nil {
+			log.Fatalf("error getting existing original images: %s", err)
+		}
+
+		rl, err := local.NewRealesrganLocal(promNamespace, originalImages)
+		if err != nil {
+			log.Fatalf("error in: NewRealesrganLocal %s", err)
+		}
+
+		var errors = make(chan error)
+		rl.Run(ctx, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, nil, errors)
+	}
 
 	cancel()
-}
-
-func mkdir(path string) error {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(path, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("error creating dir: %s, err: %w", path, err)
-		}
-	}
-	return nil
 }
