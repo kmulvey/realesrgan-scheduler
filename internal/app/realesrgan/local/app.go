@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kmulvey/path"
+	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
 	"github.com/kmulvey/realesrgan-scheduler/internal/queue"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -63,4 +64,14 @@ func (rl *RealesrganLocal) Run(ctx context.Context, cmdPath, outputPath string, 
 			log.Error(<-errors)
 		}
 	}
+}
+
+// AddImage adds the given image to the queue if the upsized path does not already exist.
+func (rl *RealesrganLocal) AddImage(image path.Entry, outputDir string) error {
+
+	if !fs.AlreadyUpsized(image, outputDir) {
+		return rl.Queue.Add(image)
+	}
+
+	return nil
 }
