@@ -16,6 +16,7 @@ import (
 
 	"github.com/gosuri/uilive"
 	"github.com/kmulvey/path"
+	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,18 +39,8 @@ func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath
 			upsizedImage.AbsolutePath = filepath.Base(inputImage.AbsolutePath)
 			upsizedImage.AbsolutePath = filepath.Join(outputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
 
-			// we need to check if this file has already been upsized
-			if stat, _ := os.Stat(upsizedImage.AbsolutePath); stat != nil {
-				var err = os.Remove(inputImage.AbsolutePath)
-				if err != nil {
-					errors <- fmt.Errorf("error removing original file after upscale, err: %w", err)
-				}
-				log.WithFields(log.Fields{
-					"queue length":  rl.Queue.Len(),
-					"original":      inputImage.AbsolutePath,
-					"original size": prettyPrintFileSizes(inputImage.FileInfo.Size()),
-					"upsized":       upsizedImage.AbsolutePath,
-				}).Info("already exists, skipping and deleting original")
+			// we need to check if this file has already been upsized, this is probably not needed anymore but will require more testing.
+			if fs.AlreadyUpsized(inputImage, outputPath) {
 				continue
 			}
 
