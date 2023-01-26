@@ -17,7 +17,8 @@ type RealesrganLocal struct {
 	queue.Queue
 }
 
-// NewRealesrganLocal is the constructor for running local upsizing.
+// NewRealesrganLocal is the constructor for running local upsizing. It takes a slice of existing files
+// and prepopulates the queue with them,  Run() takes a channel of watchEvents to stream files.
 func NewRealesrganLocal(promNamespace string, existingFiles []path.WatchEvent) (*RealesrganLocal, error) {
 
 	var upsizeTime = prometheus.NewGauge(
@@ -43,15 +44,21 @@ func NewRealesrganLocal(promNamespace string, existingFiles []path.WatchEvent) (
 }
 
 // Run starts an infinite loop that pulls files from the queue and upsizes them. This can be stopped by calling cancel() on the given context.
-func (rl *RealesrganLocal) Run(ctx context.Context, cmdPath, outputPath string, gpuID int) {
+func (rl *RealesrganLocal) Run(ctx context.Context, cmdPath, outputPath string, gpuID int, watchEvents chan path.WatchEvent, errors chan error) {
 
-	var errors = make(chan error)
 	go rl.UpsizeWorker(ctx, cmdPath, outputPath, gpuID, errors)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
+
+		case ev := <-watchEvents:
+			var err = rl.Queue.Add(ev.Entry)
+			if err != nil {
+				errors <- fmt.Errorf("error adding file to queue: %w", err)
+			}
+
 		default:
 			log.Error(<-errors)
 		}
