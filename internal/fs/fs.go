@@ -17,7 +17,7 @@ import (
 var ImageExtensionRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$|.*.JPG$|.*.JPEG$|.*.PNG$|.*.WEBP$")
 
 // GetExistingFiles returns a slice of the existing files in the given directory.
-func GetExistingFiles(originalsDir, upsizedDir string) ([]path.WatchEvent, error) {
+func GetExistingFiles(originalsDir, upsizedDir string) ([]path.Entry, error) {
 
 	// get any files that may already be in the dir because they will not trigger events
 	var files, err = path.List(originalsDir, path.NewRegexListFilter(ImageExtensionRegex))
@@ -25,14 +25,23 @@ func GetExistingFiles(originalsDir, upsizedDir string) ([]path.WatchEvent, error
 		return nil, err
 	}
 
-	var existingFiles = make([]path.WatchEvent, len(files))
+	var existingFiles = make([]path.Entry, len(files))
 	for i, f := range files {
 		if !AlreadyUpsized(f, upsizedDir) {
-			existingFiles[i] = path.WatchEvent{Entry: f, Op: fsnotify.Create}
+			existingFiles[i] = f
 		}
 	}
 
 	return existingFiles, nil
+}
+
+func WatchEventToEntry(watchEvents []path.WatchEvent) []path.Entry {
+
+	var entires = make([]path.Entry, len(watchEvents))
+	for i, watchEvent := range watchEvents {
+		entires[i] = watchEvent.Entry
+	}
+	return entires
 }
 
 // AlreadyUpsized checks if we already upsized the image.
