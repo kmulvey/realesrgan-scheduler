@@ -1,15 +1,17 @@
 package local
 
-import (
-	"context"
+// UpsizeQueue upsizes all the images in the queue and returns.
+func (rl *RealesrganLocal) UpsizeQueue(gpuID int) {
 
-	"github.com/kmulvey/goutils"
-	"github.com/kmulvey/path"
-	log "github.com/sirupsen/logrus"
-)
+	for rl.Queue.Len() > 0 {
+		var inputImage = rl.Queue.NextImage()
+		rl.Upsize(inputImage, gpuID)
+	}
+}
 
-// RunWorkers allows for the running of more than one worker thread at once for use with multiple gpus.
-func (rl *RealesrganLocal) RunWorkers(ctx context.Context, numGPUs int, upsizedImages chan path.Entry) {
+// UpsizeWatch allows for the running of more than one worker thread at once for use with multiple gpus.
+/* Fan out over multiple GPUs ... table this for now as its not immediately necessary.
+func (rl *RealesrganLocal) UpsizeWatch(ctx context.Context, numGPUs int, upsizedImages chan path.Entry) {
 
 	defer close(upsizedImages)
 	var errorChans = make([]chan error, numGPUs)
@@ -28,3 +30,4 @@ func (rl *RealesrganLocal) RunWorkers(ctx context.Context, numGPUs int, upsizedI
 		log.Errorf("error from worker: %s", err.Error())
 	}
 }
+*/
