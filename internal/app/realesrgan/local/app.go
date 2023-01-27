@@ -1,10 +1,7 @@
 package local
 
 import (
-	"context"
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/cache"
@@ -20,7 +17,7 @@ type RealesrganLocal struct {
 	NumGPUs         int
 	RemoveOriginals bool
 	UpsizeTimeGauge prometheus.Gauge
-	queue.Queue
+	*queue.Queue
 	cache.Cache
 }
 
@@ -39,40 +36,42 @@ func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath stri
 
 	var rl = RealesrganLocal{PromNamespace: promNamespace, RealesrganPath: realesrganPath, OutputPath: outputPath, UpsizeTimeGauge: upsizeTime, NumGPUs: numGPUs, RemoveOriginals: removeOriginals}
 
-	rl.Queue = queue.NewQueue()
+	rl.Queue = queue.NewQueue(false)
 
 	return &rl, nil
 }
-
-// Run starts an infinite loop that pulls files from the queue and upsizes them. This can be stopped by calling cancel() on the given context.
-func (rl *RealesrganLocal) Run(ctx context.Context, existingFiles []path.WatchEvent) {
-
-	go rl.UpsizeWorker(ctx, rl.NumGPUs, errors)
-
-	for _, existingFile := range existingFiles {
-		var err = rl.Queue.Add(existingFile.Entry)
-		if err != nil {
-			errors <- fmt.Errorf("problem adding existing files to queue: %w", err)
-		}
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-
-		case ev := <-watchEvents:
-			var err = rl.Queue.Add(ev.Entry)
-			if err != nil {
-				errors <- fmt.Errorf("error adding file to queue: %w", err)
-			}
-
-		default:
-			log.Error(<-errors)
-		}
-	}
+func (rl *RealesrganLocal) SetOutputPath(outputPath string) {
+	rl.OutputPath = outputPath
 }
 
+// Run starts an infinite loop that pulls files from the queue and upsizes them. This can be stopped by calling cancel() on the given context.
+func (rl *RealesrganLocal) Run(existingFiles []path.Entry) error {
+
+	for _, existingFile := range existingFiles {
+		var err = rl.Queue.Add(existingFile)
+		if err != nil {
+			return fmt.Errorf("problem adding existing files to queue: %w", err)
+		}
+	}
+
+	rl.UpsizeQueue(0)
+
+	return nil
+}
+
+// AddImage adds the given image to the queue if the upsized path does not already exist.
+func (rl *RealesrganLocal) AddImages(images []path.Entry, outputDir string) error {
+
+	for _, image := range images {
+		if !fs.AlreadyUpsized(image, outputDir) {
+			return rl.Queue.Add(image)
+		}
+	}
+
+	return nil
+}
+
+/*
 // Run starts an infinite loop that pulls files from the queue and upsizes them. This can be stopped by calling cancel() on the given context.
 func (rl *RealesrganLocal) Watch(ctx context.Context, watchEvents chan path.WatchEvent) {
 
@@ -91,13 +90,4 @@ func (rl *RealesrganLocal) Watch(ctx context.Context, watchEvents chan path.Watc
 		}
 	}
 }
-
-// AddImage adds the given image to the queue if the upsized path does not already exist.
-func (rl *RealesrganLocal) AddImage(image path.Entry, outputDir string) error {
-
-	if !fs.AlreadyUpsized(image, outputDir) {
-		return rl.Queue.Add(image)
-	}
-
-	return nil
-}
+*/
