@@ -87,7 +87,7 @@ func main() {
 	for _, upsizedDir := range upsizedDirs {
 
 		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
-		var originalsDir = filepath.Join(inputImages.ComputedPath.AbsolutePath, upsizedBase, 1)
+		var originalsDir = filepath.Join(inputImages.ComputedPath.AbsolutePath, upsizedBase)
 
 		var originalImages, err = fs.GetExistingFiles(originalsDir)
 		if err != nil {
