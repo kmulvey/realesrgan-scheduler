@@ -1,12 +1,12 @@
 package auto
 
 import (
-	"context"
-	"errors"
 	"flag"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/kmulvey/path"
@@ -22,7 +22,14 @@ const promNamespace = "realesrgan-scheduler"
 
 func main() {
 
-	var ctx, cancel = context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for range c {
+			return
+		}
+	}()
+	// var ctx, cancel = context.WithCancel(context.Background())
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -43,14 +50,18 @@ func main() {
 	// get the user options
 	var inputImages path.Path
 	var upscaledImages path.Path
+	var cacheDir path.Path
 	var realesrganPath string
 	var daemon bool
+	var removeOriginals bool
 	var v bool
 	var h bool
 
 	flag.Var(&inputImages, "uploaded-images-dir", "where to store the uploaded images")
 	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
+	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
 	flag.StringVar(&realesrganPath, "realesrgan-path", "realesrgan-ncnn-vulkan", "where the realesrgan binary is")
+	flag.BoolVar(&removeOriginals, "remove-originals", false, "delete original images after upsizing")
 	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
 	flag.BoolVar(&v, "version", false, "print version")
 	flag.BoolVar(&v, "v", false, "print version")
@@ -71,37 +82,32 @@ func main() {
 		os.Exit(0)
 	}
 
-	if _, err := os.Stat(inputImages.ComputedPath.AbsolutePath); errors.Is(err, os.ErrNotExist) {
-		log.Fatalf("input dir does not exist: %s", err.Error())
-	}
-
-	if err := fs.MakeDir(upscaledImages.ComputedPath.AbsolutePath); err != nil {
-		log.Fatalf("error creating upscale dir: %s", err.Error())
-	}
-
 	var upsizedDirs, err = path.List(inputImages.ComputedPath.AbsolutePath, path.NewDirListFilter())
 	if err != nil {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.ComputedPath.AbsolutePath, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 1, removeOriginals)
+	if err != nil {
+		log.Fatalf("error in: NewRealesrganLocal %s", err)
+	}
+
+	// for each upsized directory, go back to its "originals" dir and look for additional files that have not been upsized.
 	for _, upsizedDir := range upsizedDirs {
 
 		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
 		var originalsDir = filepath.Join(inputImages.ComputedPath.AbsolutePath, upsizedBase)
 
-		var originalImages, err = fs.GetExistingFiles(originalsDir)
+		rl.SetOutputPath(upsizedDir.AbsolutePath)
+
+		var originalImages, err = fs.GetExistingFiles(upsizedDir.AbsolutePath, originalsDir)
 		if err != nil {
 			log.Fatalf("error getting existing original images: %s", err)
 		}
 
-		rl, err := local.NewRealesrganLocal(promNamespace, originalImages)
+		err = rl.Run(originalImages)
 		if err != nil {
-			log.Fatalf("error in: NewRealesrganLocal %s", err)
+			log.Errorf("error in Run(): %s", err)
 		}
-
-		var errors = make(chan error)
-		rl.Run(ctx, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 0, nil, errors)
 	}
-
-	cancel()
 }
