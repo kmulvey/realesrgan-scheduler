@@ -1,7 +1,6 @@
 package local
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -20,59 +19,50 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// UpsizeWorker does the actual upsizing work, it does so indefinatly and reads new images from the front of the queue.
-func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, gpuID int) {
+var outputExt = "jpg"
 
-	var outputExt = "jpg"
+// Upsize does the actual upsizing work.
+func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
+	// inputImage is the abs path
+	var upsizedImage = inputImage
+	upsizedImage.AbsolutePath = filepath.Base(inputImage.AbsolutePath)
+	upsizedImage.AbsolutePath = filepath.Join(rl.OutputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
 
-			// inputImage is the abs path
-			var inputImage = rl.Queue.NextImage()
-			var upsizedImage = inputImage
-			upsizedImage.AbsolutePath = filepath.Base(inputImage.AbsolutePath)
-			upsizedImage.AbsolutePath = filepath.Join(rl.OutputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
+	// we need to check if this file has already been upsized, this is probably not needed anymore but will require more testing.
+	if fs.AlreadyUpsized(inputImage, rl.OutputPath) {
+		return
+	}
 
-			// we need to check if this file has already been upsized, this is probably not needed anymore but will require more testing.
-			if fs.AlreadyUpsized(inputImage, rl.OutputPath) {
-				continue
-			}
+	// we log before exec so we can see whats currently being worked on as large files can take several minutes
+	log.Trace(rl.RealesrganPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImage)
+	log.WithFields(log.Fields{
+		"queue length":  rl.Queue.Len() + 1, // + 1 here because its currently being processed
+		"original":      inputImage.AbsolutePath,
+		"original size": prettyPrintFileSizes(inputImage.FileInfo.Size()),
+	}).Info("upscaling")
 
-			// we log before exec so we can see whats currently being worked on as large files can take several minutes
-			log.Trace(rl.RealesrganPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImage)
-			log.WithFields(log.Fields{
-				"queue length":  rl.Queue.Len() + 1, // + 1 here because its currently being processed
-				"original":      inputImage.AbsolutePath,
-				"original size": prettyPrintFileSizes(inputImage.FileInfo.Size()),
-			}).Info("upscaling")
+	// upsize it !
+	var start = time.Now()
+	var err = runCmdAndCaptureOutput(rl.RealesrganPath, outputExt, gpuID, inputImage, upsizedImage)
+	if err != nil {
+		log.Errorf("error running upsize command on file %s, err: %s", inputImage.AbsolutePath, err)
+		return
+	}
+	var duration = time.Since(start)
+	rl.UpsizeTimeGauge.Set(float64(duration))
 
-			// upsize it !
-			var start = time.Now()
-			var err = runCmdAndCaptureOutput(rl.RealesrganPath, outputExt, gpuID, inputImage, upsizedImage)
-			if err != nil {
-				log.Errorf("error running upsize command on file %s, err: %s", inputImage.AbsolutePath, err)
-				continue
-			}
-			var duration = time.Since(start)
-			rl.UpsizeTimeGauge.Set(float64(duration))
+	// if we got here it was successful
+	log.WithFields(log.Fields{
+		"queue length":  rl.Queue.Len(),
+		"upsized":       upsizedImage.AbsolutePath,
+		"original size": prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
+		"duration":      duration,
+	}).Info("upsized")
 
-			// if we got here it was successful
-			log.WithFields(log.Fields{
-				"queue length":  rl.Queue.Len(),
-				"upsized":       upsizedImage.AbsolutePath,
-				"original size": prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
-				"duration":      duration,
-			}).Info("upsized")
-
-			err = os.Remove(inputImage.AbsolutePath)
-			if err != nil {
-				log.Errorf("error removing original file after upscale, err: %s", err)
-			}
-		}
+	err = os.Remove(inputImage.AbsolutePath)
+	if err != nil {
+		log.Errorf("error removing original file after upscale, err: %s", err)
 	}
 }
 
