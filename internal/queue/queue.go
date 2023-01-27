@@ -21,8 +21,8 @@ type Queue struct {
 	Notifications chan struct{}
 }
 
-// NewQueue is a simple constructor. The notifications arg specifies if you want to be notified when a new image is added to the queue.
-// If true you must read from Queue.Notifications otherwise it will block Add()
+// NewQueue takes a notifications arg which specifies if you want to be notified when a new image is added to the queue.
+// If true you must read from Queue.Notifications otherwise it will block Add().
 func NewQueue(notifications bool) *Queue {
 
 	var q = Queue{List: list.New()}
