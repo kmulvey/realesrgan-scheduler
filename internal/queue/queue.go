@@ -16,11 +16,22 @@ type Queue struct {
 	// RemovedImages helps us avoid a race condition of adding an image that is currently being processed because it will not be caught by fs.AlreadyExists().
 	// A map is used to facilitate thread safety as only having one "CurrImage" would not work with several workers running.
 	RemovedImages map[string]struct{}
+	// Notifications simply tells you something was added to the queue, you still need to go get it from NextImage(). We dont give you the image here because
+	// we dont want to circumvent the Queue's deduping and ordering.
+	Notifications chan struct{}
 }
 
-// NewQueue is a simple constructor.
-func NewQueue() Queue {
-	return Queue{List: list.New()}
+// NewQueue is a simple constructor. The notifications arg specifies if you want to be notified when a new image is added to the queue.
+// If true you must read from Queue.Notifications otherwise it will block Add()
+func NewQueue(notifications bool) *Queue {
+
+	var q = Queue{List: list.New()}
+
+	if notifications {
+		q.Notifications = make(chan struct{})
+	}
+
+	return &q
 }
 
 // NextImage returns the path.Entry for the image at the front of the queue.
@@ -82,6 +93,10 @@ func (q *Queue) Add(newImage path.Entry) error {
 			q.List.InsertBefore(newImage, currElement)
 			break
 		}
+	}
+
+	if q.Notifications != nil {
+		q.Notifications <- struct{}{}
 	}
 
 	return nil
