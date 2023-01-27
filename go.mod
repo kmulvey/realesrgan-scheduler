@@ -10,7 +10,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gosuri/uilive v0.0.4
-	github.com/kmulvey/goutils v0.6.0
 	github.com/kmulvey/path v0.14.2
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
@@ -19,7 +18,7 @@ require (
 	golang.org/x/image v0.3.0
 )
 
-replace github.com/kmulvey/path => ../path
+//replace github.com/kmulvey/path => ../path
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -48,6 +47,7 @@ require (
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
+	github.com/kmulvey/goutils v0.6.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect

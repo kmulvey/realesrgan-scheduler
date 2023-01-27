@@ -109,6 +109,8 @@ github.com/klauspost/compress v1.15.15 h1:EF27CXIuDsYJ6mmvtBRlEuB2UVOqHG1tAXgZ7y
 github.com/klauspost/compress v1.15.15/go.mod h1:ZcK2JAFqKOpnBlxcLsJzYfrS9X1akm9fHZNnD9+Vo/4=
 github.com/kmulvey/goutils v0.6.0 h1:N3ZW0f9jf0lzXE7/LeDNw1jBDHiKnvX89/D9F37h/lU=
 github.com/kmulvey/goutils v0.6.0/go.mod h1:piD3FiBNFCOGTorRV2yFpjOUQFXVO5IiCHx0Nmmom8g=
+github.com/kmulvey/path v0.14.2 h1:kEggbaWh3N1jLyJbfpR/oX2B9ZECgNPSOMIHquUG+14=
+github.com/kmulvey/path v0.14.2/go.mod h1:92baFRlZ5kBmckyf2vqVtiH9yJj7pbkLsJ/frZ91uTI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.0 h1:WgNl7dwNpEZ6jJ9k1snq4pZsg7DOEN8hP9Xw0Tsjwk0=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
