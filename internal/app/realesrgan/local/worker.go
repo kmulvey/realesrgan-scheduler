@@ -21,9 +21,7 @@ import (
 )
 
 // UpsizeWorker does the actual upsizing work, it does so indefinatly and reads new images from the front of the queue.
-func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath string, gpuID int, errors chan error) {
-
-	defer close(errors)
+func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, gpuID int) {
 
 	var outputExt = "jpg"
 
@@ -37,15 +35,15 @@ func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath
 			var inputImage = rl.Queue.NextImage()
 			var upsizedImage = inputImage
 			upsizedImage.AbsolutePath = filepath.Base(inputImage.AbsolutePath)
-			upsizedImage.AbsolutePath = filepath.Join(outputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
+			upsizedImage.AbsolutePath = filepath.Join(rl.OutputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
 
 			// we need to check if this file has already been upsized, this is probably not needed anymore but will require more testing.
-			if fs.AlreadyUpsized(inputImage, outputPath) {
+			if fs.AlreadyUpsized(inputImage, rl.OutputPath) {
 				continue
 			}
 
 			// we log before exec so we can see whats currently being worked on as large files can take several minutes
-			log.Trace(cmdPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImage)
+			log.Trace(rl.RealesrganPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImage)
 			log.WithFields(log.Fields{
 				"queue length":  rl.Queue.Len() + 1, // + 1 here because its currently being processed
 				"original":      inputImage.AbsolutePath,
@@ -54,10 +52,9 @@ func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath
 
 			// upsize it !
 			var start = time.Now()
-
-			var err = runCmdAndCaptureOutput(cmdPath, outputExt, gpuID, inputImage, upsizedImage)
+			var err = runCmdAndCaptureOutput(rl.RealesrganPath, outputExt, gpuID, inputImage, upsizedImage)
 			if err != nil {
-				errors <- fmt.Errorf("error running upsize command on file %s, err: %w", inputImage.AbsolutePath, err)
+				log.Errorf("error running upsize command on file %s, err: %s", inputImage.AbsolutePath, err)
 				continue
 			}
 			var duration = time.Since(start)
@@ -73,7 +70,7 @@ func (rl *RealesrganLocal) UpsizeWorker(ctx context.Context, cmdPath, outputPath
 
 			err = os.Remove(inputImage.AbsolutePath)
 			if err != nil {
-				errors <- fmt.Errorf("error removing original file after upscale, err: %w", err)
+				log.Errorf("error removing original file after upscale, err: %s", err)
 			}
 		}
 	}

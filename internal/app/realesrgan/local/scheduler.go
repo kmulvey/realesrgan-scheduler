@@ -9,7 +9,7 @@ import (
 )
 
 // RunWorkers allows for the running of more than one worker thread at once for use with multiple gpus.
-func (rl *RealesrganLocal) RunWorkers(ctx context.Context, cmdPath, outputPath string, numGPUs int, originalImages, upsizedImages chan path.Entry) {
+func (rl *RealesrganLocal) RunWorkers(ctx context.Context, numGPUs int, upsizedImages chan path.Entry) {
 
 	defer close(upsizedImages)
 	var errorChans = make([]chan error, numGPUs)
@@ -21,7 +21,7 @@ func (rl *RealesrganLocal) RunWorkers(ctx context.Context, cmdPath, outputPath s
 		}
 		var errors = make(chan error)
 		errorChans[i] = errors
-		go rl.UpsizeWorker(ctx, cmdPath, outputPath, i, errors)
+		go rl.UpsizeWorker(ctx, i)
 	}
 
 	for err := range goutils.MergeChannels(errorChans...) {
