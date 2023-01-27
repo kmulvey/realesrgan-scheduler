@@ -9,7 +9,7 @@ import (
 )
 
 func TestAdd(t *testing.T) {
-	var queue = NewQueue()
+	var queue = NewQueue(false)
 
 	var small, err = path.NewEntry("./testfiles/small")
 	assert.NoError(t, err)
@@ -30,62 +30,62 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, 2, queue.List.Len())
 
 	assert.NoError(t, queue.Add(large))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	////////////////////////////////////
 
 	assert.NoError(t, queue.Add(small))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(large))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(medium))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	////////////////////////////////////
 
 	assert.NoError(t, queue.Add(medium))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(small))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(large))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	////////////////////////////////////
 
 	assert.NoError(t, queue.Add(medium))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(large))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(small))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	////////////////////////////////////
 
 	assert.NoError(t, queue.Add(large))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(small))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(medium))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	////////////////////////////////////
 
 	assert.NoError(t, queue.Add(large))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(medium))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 	assert.NoError(t, queue.Add(small))
-	validateAll(t, &queue, small, medium, large)
+	validateAll(t, queue, small, medium, large)
 
 }
 
