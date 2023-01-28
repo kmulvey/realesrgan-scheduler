@@ -16,4 +16,5 @@
 realesrgan-scheduler
 ./upload
 ./upscaled
-./cmd/auto/skipcache
+cmd/auto/skipcache/
+cmd/auto/auto
