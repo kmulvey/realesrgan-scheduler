@@ -50,6 +50,7 @@ func (q *Queue) NextImage() path.Entry {
 	var nextImage, _ = next.Value.(path.Entry) // we dont bother checking if the cast went well because there is no way you could have pushed a non Entry on anyway
 
 	q.RemovedImages[nextImage.AbsolutePath] = struct{}{}
+	q.List.Remove(next)
 
 	return nextImage
 }
