@@ -50,7 +50,7 @@ func main() {
 	// get the user options
 	var originalImages, upscaledImages, cacheDir path.Path
 	var realesrganPath string
-	var daemon, removeOriginals, v, h, ver bool
+	var daemon, removeOriginals, h, ver bool
 
 	flag.Var(&originalImages, "original-images-dir", "path to the original (input) images")
 	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
@@ -59,7 +59,6 @@ func main() {
 	flag.BoolVar(&removeOriginals, "remove-originals", false, "delete original images after upsizing")
 	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
 	flag.BoolVar(&ver, "version", false, "print version")
-	flag.BoolVar(&v, "v", false, "print version")
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
 
@@ -68,7 +67,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if v || ver {
+	if ver {
 		var verPrinter = printer.New()
 		var info = version.Get()
 		if err := verPrinter.PrintInfo(os.Stdout, info); err != nil {
