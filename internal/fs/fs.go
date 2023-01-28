@@ -16,18 +16,7 @@ import (
 // ImageExtensionRegex are all the supported image extensions, and the only ones that will be included in file search/globbing.
 var ImageExtensionRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$|.*.JPG$|.*.JPEG$|.*.PNG$|.*.WEBP$")
 
-// GetExistingFiles returns a slice of the existing files in the given directory.
-func GetExistingFiles(dir string) ([]path.Entry, error) {
-
-	// get any files that may already be in the dir because they will not trigger events
-	var files, err = path.List(dir, path.NewRegexListFilter(ImageExtensionRegex))
-	if err != nil {
-		return nil, err
-	}
-
-	return files, nil
-}
-
+// WatchEventToEntry convert path.WatchEvent to path.Entry
 func WatchEventToEntry(watchEvents []path.WatchEvent) []path.Entry {
 
 	var entires = make([]path.Entry, len(watchEvents))
