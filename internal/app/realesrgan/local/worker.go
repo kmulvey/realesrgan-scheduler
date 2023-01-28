@@ -60,9 +60,11 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 		"duration":      duration,
 	}).Info("upsized")
 
-	err = os.Remove(inputImage.AbsolutePath)
-	if err != nil {
-		log.Errorf("error removing original file after upscale, err: %s", err)
+	if rl.RemoveOriginals {
+		err = os.Remove(inputImage.AbsolutePath)
+		if err != nil {
+			log.Errorf("error removing original file after upscale, err: %s", err)
+		}
 	}
 }
 
