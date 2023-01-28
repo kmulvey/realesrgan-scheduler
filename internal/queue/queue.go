@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/kmulvey/path"
+	log "github.com/sirupsen/logrus"
 )
 
 // Queue is an linked list ordered by file size and deduped.
@@ -25,7 +26,7 @@ type Queue struct {
 // If true you must read from Queue.Notifications otherwise it will block Add().
 func NewQueue(notifications bool) *Queue {
 
-	var q = Queue{List: list.New()}
+	var q = Queue{List: list.New(), RemovedImages: make(map[string]struct{})}
 
 	if notifications {
 		q.Notifications = make(chan struct{})
@@ -100,4 +101,17 @@ func (q *Queue) Add(newImage path.Entry) error {
 	}
 
 	return nil
+}
+
+func (q *Queue) Print() {
+
+	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
+
+		var currEntry, ok = currElement.Value.(path.Entry)
+		if !ok {
+			log.Errorf("casting currFile to path.Entry failed, was actually type: %s", reflect.TypeOf(currElement.Value))
+		}
+
+		fmt.Println(currEntry.AbsolutePath)
+	}
 }
