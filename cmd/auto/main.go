@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -69,8 +68,6 @@ func main() {
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
 
-	// DELETE
-
 	if h {
 		flag.PrintDefaults()
 		os.Exit(0)
@@ -103,7 +100,8 @@ func main() {
 
 		rl.SetOutputPath(upsizedDir.AbsolutePath)
 
-		var originalImages, err = fs.GetExistingFiles(originalsDir)
+		var originalImages, err = path.List(originalsDir, path.NewRegexListFilter(fs.ImageExtensionRegex))
+
 		if err != nil {
 			log.Fatalf("error getting existing original images: %s", err)
 		}
@@ -112,11 +110,5 @@ func main() {
 		if err != nil {
 			log.Errorf("error in Run(): %s", err)
 		}
-	}
-}
-
-func printImages(files []path.Entry) {
-	for _, file := range files {
-		fmt.Println(file.AbsolutePath)
 	}
 }
