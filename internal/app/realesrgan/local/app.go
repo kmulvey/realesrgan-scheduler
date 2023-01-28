@@ -34,11 +34,20 @@ func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath stri
 	)
 	prometheus.MustRegister(upsizeTime)
 
-	var rl = RealesrganLocal{PromNamespace: promNamespace, RealesrganPath: realesrganPath, OutputPath: outputPath, UpsizeTimeGauge: upsizeTime, NumGPUs: numGPUs, RemoveOriginals: removeOriginals}
+	var rl = RealesrganLocal{
+		PromNamespace:   promNamespace,
+		RealesrganPath:  realesrganPath,
+		OutputPath:      outputPath,
+		UpsizeTimeGauge: upsizeTime,
+		NumGPUs:         numGPUs,
+		RemoveOriginals: removeOriginals,
+		Queue:           queue.NewQueue(false),
+	}
 
-	rl.Queue = queue.NewQueue(false)
+	var cache, err = cache.New(cacheDir)
+	rl.Cache = cache
 
-	return &rl, nil
+	return &rl, err
 }
 func (rl *RealesrganLocal) SetOutputPath(outputPath string) {
 	rl.OutputPath = outputPath
@@ -48,7 +57,7 @@ func (rl *RealesrganLocal) SetOutputPath(outputPath string) {
 func (rl *RealesrganLocal) Run(images []path.Entry) error {
 
 	for _, image := range images {
-		if !fs.AlreadyUpsized(image, rl.OutputPath) {
+		if !fs.AlreadyUpsized(image, rl.OutputPath) && !rl.Cache.Contains(image) {
 			var err = rl.Queue.Add(image)
 			if err != nil {
 				return fmt.Errorf("problem adding existing files to queue: %w", err)
