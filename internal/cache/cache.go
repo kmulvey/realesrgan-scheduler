@@ -11,7 +11,7 @@ type Cache struct {
 	*badger.DB
 }
 
-func NewCache(cachePath string) (Cache, error) {
+func New(cachePath string) (Cache, error) {
 	db, err := badger.Open(badger.DefaultOptions(cachePath))
 	if err != nil {
 		return Cache{}, fmt.Errorf("error opening badger db: %w", err)
@@ -28,4 +28,23 @@ func (c *Cache) AddImage(image path.Entry) error {
 	return c.DB.Update(func(txn *badger.Txn) error {
 		return txn.Set([]byte(image.AbsolutePath), nil)
 	})
+}
+
+func (c *Cache) Contains(image path.Entry) bool {
+
+	var found bool
+	if err := c.DB.View(func(txn *badger.Txn) error {
+
+		var _, err = txn.Get([]byte(image.AbsolutePath))
+		if err == nil {
+			found = true
+			return nil
+		}
+		return err
+
+	}); err != nil {
+		return false
+	}
+
+	return found
 }
