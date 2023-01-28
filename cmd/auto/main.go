@@ -1,7 +1,8 @@
-package auto
+package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,7 +19,7 @@ import (
 	"go.szostok.io/version/printer"
 )
 
-const promNamespace = "realesrgan-scheduler"
+const promNamespace = "realesrgan_scheduler"
 
 func main() {
 
@@ -39,7 +40,7 @@ func main() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		s := &http.Server{
-			Addr:           ":6000",
+			Addr:           ":6001",
 			ReadTimeout:    10 * time.Second,
 			WriteTimeout:   10 * time.Second,
 			MaxHeaderBytes: 1 << 20,
@@ -48,7 +49,7 @@ func main() {
 	}()
 
 	// get the user options
-	var inputImages path.Path
+	var originalImages path.Path
 	var upscaledImages path.Path
 	var cacheDir path.Path
 	var realesrganPath string
@@ -57,16 +58,18 @@ func main() {
 	var v bool
 	var h bool
 
-	flag.Var(&inputImages, "uploaded-images-dir", "where to store the uploaded images")
+	flag.Var(&originalImages, "original-images-dir", "path to the original (input) images")
 	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
 	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
 	flag.StringVar(&realesrganPath, "realesrgan-path", "realesrgan-ncnn-vulkan", "where the realesrgan binary is")
 	flag.BoolVar(&removeOriginals, "remove-originals", false, "delete original images after upsizing")
 	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
 	flag.BoolVar(&v, "version", false, "print version")
-	flag.BoolVar(&v, "v", false, "print version")
+	//flag.BoolVar(&v, "v", false, "print version")
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
+
+	// DELETE
 
 	if h {
 		flag.PrintDefaults()
@@ -82,7 +85,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	var upsizedDirs, err = path.List(inputImages.ComputedPath.AbsolutePath, path.NewDirListFilter())
+	var upsizedDirs, err = path.List(upscaledImages.ComputedPath.AbsolutePath, path.NewDirListFilter())
 	if err != nil {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
@@ -96,11 +99,11 @@ func main() {
 	for _, upsizedDir := range upsizedDirs {
 
 		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
-		var originalsDir = filepath.Join(inputImages.ComputedPath.AbsolutePath, upsizedBase)
+		var originalsDir = filepath.Join(originalImages.ComputedPath.AbsolutePath, upsizedBase)
 
 		rl.SetOutputPath(upsizedDir.AbsolutePath)
 
-		var originalImages, err = fs.GetExistingFiles(upsizedDir.AbsolutePath, originalsDir)
+		var originalImages, err = fs.GetExistingFiles(originalsDir)
 		if err != nil {
 			log.Fatalf("error getting existing original images: %s", err)
 		}
@@ -109,5 +112,11 @@ func main() {
 		if err != nil {
 			log.Errorf("error in Run(): %s", err)
 		}
+	}
+}
+
+func printImages(files []path.Entry) {
+	for _, file := range files {
+		fmt.Println(file.AbsolutePath)
 	}
 }
