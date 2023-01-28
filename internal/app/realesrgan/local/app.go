@@ -45,12 +45,14 @@ func (rl *RealesrganLocal) SetOutputPath(outputPath string) {
 }
 
 // Run starts an infinite loop that pulls files from the queue and upsizes them. This can be stopped by calling cancel() on the given context.
-func (rl *RealesrganLocal) Run(existingFiles []path.Entry) error {
+func (rl *RealesrganLocal) Run(images []path.Entry) error {
 
-	for _, existingFile := range existingFiles {
-		var err = rl.Queue.Add(existingFile)
-		if err != nil {
-			return fmt.Errorf("problem adding existing files to queue: %w", err)
+	for _, image := range images {
+		if !fs.AlreadyUpsized(image, rl.OutputPath) {
+			var err = rl.Queue.Add(image)
+			if err != nil {
+				return fmt.Errorf("problem adding existing files to queue: %w", err)
+			}
 		}
 	}
 
@@ -64,7 +66,10 @@ func (rl *RealesrganLocal) AddImages(images []path.Entry, outputDir string) erro
 
 	for _, image := range images {
 		if !fs.AlreadyUpsized(image, outputDir) {
-			return rl.Queue.Add(image)
+			var err = rl.Queue.Add(image)
+			if err != nil {
+				return fmt.Errorf("problem adding existing files to queue: %w", err)
+			}
 		}
 	}
 
