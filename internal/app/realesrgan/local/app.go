@@ -41,7 +41,7 @@ func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath stri
 		UpsizeTimeGauge: upsizeTime,
 		NumGPUs:         numGPUs,
 		RemoveOriginals: removeOriginals,
-		Queue:           queue.NewQueue(false),
+		Queue:           queue.New(false),
 	}
 
 	var cache, err = cache.New(cacheDir)

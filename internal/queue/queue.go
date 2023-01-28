@@ -22,9 +22,9 @@ type Queue struct {
 	Notifications chan struct{}
 }
 
-// NewQueue takes a notifications arg which specifies if you want to be notified when a new image is added to the queue.
+// New takes a notifications arg which specifies if you want to be notified when a new image is added to the queue.
 // If true you must read from Queue.Notifications otherwise it will block Add().
-func NewQueue(notifications bool) *Queue {
+func New(notifications bool) *Queue {
 
 	var q = Queue{List: list.New(), RemovedImages: make(map[string]struct{})}
 
@@ -60,6 +60,11 @@ func (q *Queue) Add(newImage path.Entry) error {
 
 	q.Lock.Lock()
 	defer q.Lock.Unlock()
+
+	// Skip in-flight images
+	if _, found := q.RemovedImages[newImage.AbsolutePath]; found {
+		return nil
+	}
 
 	// init
 	if q.List.Len() == 0 {
