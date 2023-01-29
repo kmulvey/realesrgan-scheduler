@@ -42,7 +42,7 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 	var err = runCmdAndCaptureOutput(rl.RealesrganPath, outputExt, gpuID, inputImage, upsizedImage)
 	if err != nil {
 		log.Errorf("error running upsize command on file %s, err: %s", inputImage.AbsolutePath, err)
-		err = rl.Cache.AddImage(inputImage)
+		err = rl.Cache.AddImage(inputImage) // we added images that cannot be upscaled to the cache so we can skip them in the future
 		if err != nil {
 			log.Errorf("error adding broken image to skip cache %s, err: %s", inputImage.AbsolutePath, err)
 		}
