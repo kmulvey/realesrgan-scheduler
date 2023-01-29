@@ -82,6 +82,13 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 	// listen for events from the queue and when we get one,
 	// send NextImage() to the conversion loop
 	go func() {
+
+		// handle all the existing image in the dir
+		for i := 0; i < rl.Queue.List.Len(); i++ {
+			images <- rl.Queue.NextImage()
+		}
+
+		// handle new files that get added to the dir after we start
 		for range rl.Queue.Notifications {
 			images <- rl.Queue.NextImage()
 		}
