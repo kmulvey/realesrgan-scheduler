@@ -9,7 +9,7 @@ import (
 )
 
 func TestAdd(t *testing.T) {
-	var queue = NewQueue(false)
+	var queue = New(false)
 
 	var small, err = path.NewEntry("./testfiles/small")
 	assert.NoError(t, err)
