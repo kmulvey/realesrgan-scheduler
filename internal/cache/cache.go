@@ -2,9 +2,12 @@ package cache
 
 import (
 	"fmt"
+	"strings"
 
 	badger "github.com/dgraph-io/badger/v3"
 	"github.com/kmulvey/path"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type Cache struct {
@@ -12,7 +15,13 @@ type Cache struct {
 }
 
 func New(cachePath string) (Cache, error) {
-	db, err := badger.Open(badger.DefaultOptions(cachePath))
+	var l = logrus.New()
+	l.SetLevel(log.ErrorLevel)
+
+	var opts = badger.DefaultOptions(cachePath)
+	opts.Logger = l
+
+	db, err := badger.Open(opts)
 	if err != nil {
 		return Cache{}, fmt.Errorf("error opening badger db: %w", err)
 	}
@@ -47,4 +56,26 @@ func (c *Cache) Contains(image path.Entry) bool {
 	}
 
 	return found
+}
+
+func (c *Cache) ListKeys(searchTerm string, images chan string) error {
+
+	return c.DB.View(func(txn *badger.Txn) error {
+
+		var opts = badger.DefaultIteratorOptions
+		opts.PrefetchSize = 20
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			var key = string(it.Item().Key())
+			if strings.Contains(key, searchTerm) {
+				images <- key
+			}
+		}
+
+		it.Close()
+		close(images)
+		return nil
+	})
 }
