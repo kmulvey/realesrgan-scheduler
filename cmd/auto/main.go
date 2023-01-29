@@ -109,9 +109,12 @@ func main() {
 		rl.SetOutputPath(upsizedDir.AbsolutePath)
 
 		var originalImages, err = path.List(originalsDir, path.NewRegexListFilter(fs.ImageExtensionRegex))
-
 		if err != nil {
 			log.Fatalf("error getting existing original images: %s", err)
+		}
+
+		if len(originalImages) == 0 {
+			continue
 		}
 
 		log.Infof("Starting queue length: %d for dir: %s", rl.Queue.Len(), originalsDir)
