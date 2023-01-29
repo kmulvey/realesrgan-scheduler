@@ -79,18 +79,20 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 	var images = make(chan path.Entry)
 	rl.UpsizeWatch(rl.NumGPUs, images)
 
-	// listen for events from the queue and when we get one,
-	// send NextImage() to the conversion loop
+	// listen for events from the queue and when we get one send NextImage() to the conversion loop.
 	go func() {
+		for {
+			select {
+			// handle new files that get added to the dir after we start
+			case <-rl.Queue.Notifications:
+				images <- rl.Queue.NextImage()
 
-		// handle all the existing image in the dir
-		for i := 0; i < rl.Queue.List.Len(); i++ {
-			images <- rl.Queue.NextImage()
-		}
-
-		// handle new files that get added to the dir after we start
-		for range rl.Queue.Notifications {
-			images <- rl.Queue.NextImage()
+			default:
+				// handle all the existing image in the dir
+				if rl.Queue.List.Len() > 0 {
+					images <- rl.Queue.NextImage()
+				}
+			}
 		}
 	}()
 
