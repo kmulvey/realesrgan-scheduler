@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -17,11 +18,12 @@ import (
 func main() {
 	// get the user options
 	var cacheDir path.Path
-	var searchTerm string
+	var searchTerm, addImage string
 	var h, ver bool
 
 	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
-	flag.StringVar(&searchTerm, "search", "", "search")
+	flag.StringVar(&searchTerm, "search", "", "search term")
+	flag.StringVar(&addImage, "add-image", "", "image to add to cache")
 	flag.BoolVar(&ver, "version", false, "print version")
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
@@ -45,6 +47,21 @@ func main() {
 	var db, err = cache.New(cacheDir.ComputedPath.AbsolutePath)
 	if err != nil {
 		log.Errorf("error opening badger dir: %s", err)
+	}
+
+	addImage = strings.TrimSpace(addImage)
+	if addImage != "" {
+		var entry, err = path.NewEntry(addImage)
+		if err != nil {
+			log.Fatalf("image: %s does not exist", addImage)
+		}
+
+		err = db.AddImage(entry)
+		if err != nil {
+			log.Fatalf("error adding image: %s to cache", addImage)
+		}
+
+		os.Exit(0)
 	}
 
 	var images = make(chan string)
