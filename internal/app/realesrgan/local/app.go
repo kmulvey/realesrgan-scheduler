@@ -75,6 +75,8 @@ func (rl *RealesrganLocal) Run(images []path.Entry) error {
 // Watch takes watchEvents and adds them to the queue and listens to events from the queue.
 func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 
+	log.Infof("Starting queue length: %d", rl.Queue.Len())
+
 	// start up conversion loop
 	var images = make(chan path.Entry)
 	rl.UpsizeWatch(rl.NumGPUs, images)
@@ -85,12 +87,26 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 			select {
 			// handle new files that get added to the dir after we start
 			case <-rl.Queue.Notifications:
-				images <- rl.Queue.NextImage()
+				var img = rl.Queue.NextImage()
+				images <- img
+
+				log.WithFields(log.Fields{
+					"remaining queue length": rl.Queue.Len(),
+					"original":               img.AbsolutePath,
+					"original size":          prettyPrintFileSizes(img.FileInfo.Size()),
+				}).Info("upscaling")
 
 			default:
 				// handle all the existing image in the dir
-				if rl.Queue.List.Len() > 0 {
-					images <- rl.Queue.NextImage()
+				if rl.Queue.Len() > 0 {
+					var img = rl.Queue.NextImage()
+					images <- img
+
+					log.WithFields(log.Fields{
+						"remaining queue length": rl.Queue.Len(),
+						"original":               img.AbsolutePath,
+						"original size":          prettyPrintFileSizes(img.FileInfo.Size()),
+					}).Info("upscaling")
 				}
 			}
 		}
