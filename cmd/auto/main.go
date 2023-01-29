@@ -114,6 +114,8 @@ func main() {
 			log.Fatalf("error getting existing original images: %s", err)
 		}
 
+		log.Infof("Starting queue length: %d for dir: %s", rl.Queue.Len(), originalsDir)
+
 		err = rl.Run(originalImages)
 		if err != nil {
 			log.Errorf("error in Run(): %s", err)
