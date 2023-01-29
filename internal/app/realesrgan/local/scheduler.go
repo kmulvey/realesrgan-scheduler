@@ -16,8 +16,6 @@ func (rl *RealesrganLocal) UpsizeQueue(gpuID int) {
 // UpsizeWatch allows for the running of more than one worker thread at once for use with multiple gpus.
 func (rl *RealesrganLocal) UpsizeWatch(numGPUs int, inputImages chan path.Entry) {
 
-	defer close(inputImages)
-
 	for i := 0; i <= numGPUs; i++ {
 		// realesrgan has a bug that does not recognize gpu id 1, so it is always skipped
 		if i == 1 {
