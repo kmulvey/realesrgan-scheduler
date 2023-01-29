@@ -2,6 +2,7 @@ package local
 
 import (
 	"github.com/kmulvey/path"
+	log "github.com/sirupsen/logrus"
 )
 
 // UpsizeQueue upsizes all the images in the queue and returns.
@@ -9,6 +10,13 @@ func (rl *RealesrganLocal) UpsizeQueue(gpuID int) {
 
 	for rl.Queue.Len() > 0 {
 		var inputImage = rl.Queue.NextImage()
+
+		log.WithFields(log.Fields{
+			"remaining queue length": rl.Queue.Len(),
+			"original":               inputImage.AbsolutePath,
+			"original size":          prettyPrintFileSizes(inputImage.FileInfo.Size()),
+		}).Info("upscaling")
+
 		rl.Upsize(inputImage, gpuID)
 	}
 }
