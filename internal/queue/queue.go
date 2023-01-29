@@ -109,6 +109,7 @@ func (q *Queue) Add(newImage path.Entry) error {
 	return nil
 }
 
+// Print does just that for the whole queue from Front to Back.
 func (q *Queue) Print() {
 
 	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
