@@ -22,8 +22,6 @@ const promNamespace = "realesrgan_scheduler"
 
 func main() {
 
-	// var ctx, cancel = context.WithCancel(context.Background())
-
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
@@ -68,6 +66,14 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
+	log.Infof("Config: originalImages: %s, upscaledImages: %s, realesrganPath: %s, cacheDir: %s, removeOriginals: %t, daemon: %t",
+		originalImages.ComputedPath.AbsolutePath,
+		upscaledImages.ComputedPath.AbsolutePath,
+		realesrganPath,
+		cacheDir.ComputedPath.AbsolutePath,
+		removeOriginals,
+		daemon)
 
 	var upsizedDirs, err = path.List(upscaledImages.ComputedPath.AbsolutePath, path.NewDirListFilter())
 	if err != nil {
