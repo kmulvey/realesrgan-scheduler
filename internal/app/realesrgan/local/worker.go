@@ -36,11 +36,6 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 
 	// we log before exec so we can see whats currently being worked on as large files can take several minutes
 	log.Trace(rl.RealesrganPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImage)
-	// log.WithFields(log.Fields{
-	// 	"remaining queue length": rl.Queue.Len(),
-	// 	"original":               inputImage.AbsolutePath,
-	// 	"original size":          prettyPrintFileSizes(inputImage.FileInfo.Size()),
-	// }).Info("upscaling")
 
 	// upsize it !
 	var start = time.Now()
@@ -58,10 +53,10 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 
 	// if we got here it was successful
 	log.WithFields(log.Fields{
-		//"remaining queue length": rl.Queue.Len(),
-		"upsized":       upsizedImage.AbsolutePath,
-		"original size": prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
-		"duration":      duration,
+		"remaining queue length": rl.Queue.Len(),
+		"upsized":                upsizedImage.AbsolutePath,
+		"original size":          prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
+		"duration":               duration,
 	}).Info("upsized")
 
 	if rl.RemoveOriginals {
