@@ -26,6 +26,16 @@ func WatchEventToEntry(watchEvents []path.WatchEvent) []path.Entry {
 	return entires
 }
 
+// WatchEventToEntry convert path.WatchEvent to path.Entry
+func WatchEventChanToEntryChan(watchEvents chan path.WatchEvent) chan path.Entry {
+
+	var entires = make(chan path.Entry)
+	for watchEvent := range watchEvents {
+		entires <- watchEvent.Entry
+	}
+	return entires
+}
+
 // AlreadyUpsized checks if we already upsized the image.
 func AlreadyUpsized(originalImage path.Entry, outputPath string) bool {
 
