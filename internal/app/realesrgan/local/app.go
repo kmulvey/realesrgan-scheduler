@@ -8,6 +8,7 @@ import (
 	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
 	"github.com/kmulvey/realesrgan-scheduler/internal/queue"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 type RealesrganLocal struct {
@@ -49,6 +50,8 @@ func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath stri
 
 	return &rl, err
 }
+
+// SetOutputPath allows you to change the output path while RealesrganLocal is running.
 func (rl *RealesrganLocal) SetOutputPath(outputPath string) {
 	rl.OutputPath = outputPath
 }
@@ -57,12 +60,11 @@ func (rl *RealesrganLocal) SetOutputPath(outputPath string) {
 func (rl *RealesrganLocal) Run(images []path.Entry) error {
 
 	for _, image := range images {
-		if !fs.AlreadyUpsized(image, rl.OutputPath) && !rl.Cache.Contains(image) {
-			var err = rl.Queue.Add(image)
-			if err != nil {
-				return fmt.Errorf("problem adding existing files to queue: %w", err)
-			}
+		var err = rl.AddImage(image)
+		if err != nil {
+			return fmt.Errorf("problem adding existing files to queue: %w", err)
 		}
+
 	}
 
 	rl.UpsizeQueue(0)
@@ -70,38 +72,43 @@ func (rl *RealesrganLocal) Run(images []path.Entry) error {
 	return nil
 }
 
-// AddImage adds the given image to the queue if the upsized path does not already exist.
-func (rl *RealesrganLocal) AddImages(images []path.Entry, outputDir string) error {
+// Watch takes watchEvents and adds them to the queue and listens to events from the queue.
+func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 
-	for _, image := range images {
-		if !fs.AlreadyUpsized(image, outputDir) {
-			var err = rl.Queue.Add(image)
+	// start up conversion loop
+	var images = make(chan path.Entry)
+	rl.UpsizeWatch(rl.NumGPUs, images)
+
+	// listen for events from the queue and when we get one,
+	// send NextImage() to the conversion loop
+	go func() {
+		for range rl.Queue.Notifications {
+			images <- rl.Queue.NextImage()
+		}
+	}()
+
+	// add watch events to the queue. DO NOT add these directly to the conversion loop
+	// as that will bypass the ordering of the queue.
+	go func() {
+		for watchEvent := range watchEvents {
+			var err = rl.AddImage(watchEvent.Entry)
 			if err != nil {
-				return fmt.Errorf("problem adding existing files to queue: %w", err)
+				log.Errorf("problem adding existing files to queue: %s", err)
 			}
+		}
+	}()
+
+}
+
+// AddImage adds the given image to the queue if the upsized path does not already exist.
+func (rl *RealesrganLocal) AddImage(image path.Entry) error {
+
+	if !fs.AlreadyUpsized(image, rl.OutputPath) && !rl.Cache.Contains(image) {
+		var err = rl.Queue.Add(image)
+		if err != nil {
+			return fmt.Errorf("problem adding existing files to queue: %w", err)
 		}
 	}
 
 	return nil
 }
-
-/*
-// Run starts an infinite loop that pulls files from the queue and upsizes them. This can be stopped by calling cancel() on the given context.
-func (rl *RealesrganLocal) Watch(ctx context.Context, watchEvents chan path.WatchEvent) {
-
-	go rl.UpsizeWorker(ctx, rl.NumGPUs)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-
-		case ev := <-watchEvents:
-			var err = rl.Queue.Add(ev.Entry)
-			if err != nil {
-				log.Errorf("error adding file to queue: %s", err)
-			}
-		}
-	}
-}
-*/
