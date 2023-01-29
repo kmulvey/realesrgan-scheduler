@@ -22,13 +22,6 @@ const promNamespace = "realesrgan_scheduler"
 
 func main() {
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		for range c {
-			return
-		}
-	}()
 	// var ctx, cancel = context.WithCancel(context.Background())
 
 	log.SetFormatter(&log.TextFormatter{
@@ -39,7 +32,7 @@ func main() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		s := &http.Server{
-			Addr:           ":6001",
+			Addr:           ":6000",
 			ReadTimeout:    10 * time.Second,
 			WriteTimeout:   10 * time.Second,
 			MaxHeaderBytes: 1 << 20,
@@ -85,6 +78,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for range c {
+			log.Info("interrupt caught, closing db ...")
+			err = rl.Cache.Close()
+			if err != nil {
+				log.Fatalf("error closing badger: %s", err)
+			}
+
+			log.Info("bye")
+			os.Exit(0)
+		}
+	}()
 
 	// for each upsized directory, go back to its "originals" dir and look for additional files that have not been upsized.
 	for _, upsizedDir := range upsizedDirs {
