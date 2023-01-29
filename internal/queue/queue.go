@@ -109,6 +109,11 @@ func (q *Queue) Add(newImage path.Entry) error {
 	return nil
 }
 
+// Len returns the number of elements of list l. The complexity is O(1).
+func (q *Queue) Len() int {
+	return q.List.Len()
+}
+
 // Print does just that for the whole queue from Front to Back.
 func (q *Queue) Print() {
 
