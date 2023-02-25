@@ -21,3 +21,4 @@ cmd/comparedirs/comparedirs
 cmd/managecache/managecache
 retiredskiplist.txt
 largeskiplist.txt
+.vscode
