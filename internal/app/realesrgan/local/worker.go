@@ -25,9 +25,8 @@ var outputExt = "jpg"
 func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 
 	// inputImage is the abs path
-	var upsizedImage = inputImage
-	upsizedImage.AbsolutePath = filepath.Base(inputImage.AbsolutePath)
-	upsizedImage.AbsolutePath = filepath.Join(rl.OutputPath, strings.Replace(upsizedImage.AbsolutePath, filepath.Ext(upsizedImage.AbsolutePath), "."+outputExt, 1))
+	var upsizedImagePath = filepath.Base(inputImage.AbsolutePath)
+	upsizedImagePath = filepath.Join(rl.OutputPath, strings.Replace(upsizedImagePath, filepath.Ext(upsizedImagePath), "."+outputExt, 1))
 
 	// we need to check if this file has already been upsized, this is probably not needed anymore but will require more testing.
 	if fs.AlreadyUpsized(inputImage, rl.OutputPath) {
@@ -35,11 +34,11 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 	}
 
 	// we log before exec so we can see whats currently being worked on as large files can take several minutes
-	log.Trace(rl.RealesrganPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImage)
+	log.Trace(rl.RealesrganPath, "-f", outputExt, " -g ", strconv.Itoa(gpuID), " -n ", " realesrgan-x4plus ", " -i ", inputImage, " -o ", upsizedImagePath)
 
 	// upsize it !
 	var start = time.Now()
-	var err = runCmdAndCaptureOutput(rl.RealesrganPath, outputExt, gpuID, inputImage, upsizedImage)
+	var err = runCmdAndCaptureOutput(rl.RealesrganPath, outputExt, inputImage.AbsolutePath, upsizedImagePath, gpuID)
 	if err != nil {
 		log.Errorf("error running upsize command on file %s, err: %s", inputImage.AbsolutePath, err)
 		err = rl.Cache.AddImage(inputImage) // we added images that cannot be upscaled to the cache so we can skip them in the future
@@ -51,11 +50,17 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 	var duration = time.Since(start)
 	rl.UpsizeTimeGauge.Set(float64(duration))
 
+	upsizedImage, err := path.NewEntry(upsizedImagePath)
+	if err != nil {
+		log.Errorf("error creating NewEntry for the upsized image %s, err: %s", upsizedImagePath, err)
+
+	}
+
 	// if we got here it was successful
 	log.WithFields(log.Fields{
 		"remaining queue length": rl.Queue.Len(),
-		"upsized":                upsizedImage.AbsolutePath,
-		"original size":          prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
+		"upsized":                upsizedImagePath,
+		"upsized size":           prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
 		"duration":               duration,
 	}).Info("upsized")
 
@@ -86,9 +91,9 @@ func prettyPrintFileSizes(filesize int64) string {
 }
 
 // runCmdAndCaptureOutput runs the realesrgan command and captures stdout and passes it to logProgress for single line logging.
-func runCmdAndCaptureOutput(cmdPath, outputExt string, gpuID int, inputImage, upsizedImage path.Entry) error {
+func runCmdAndCaptureOutput(cmdPath, outputExt, inputImagePath, upsizedImagePath string, gpuID int) error {
 
-	var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", inputImage.AbsolutePath, "-o", upsizedImage.AbsolutePath)
+	var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", inputImagePath, "-o", upsizedImagePath)
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
 	var errStdout error
