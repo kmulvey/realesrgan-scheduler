@@ -12,6 +12,7 @@ import (
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
 	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
+	"github.com/kmulvey/realesrgan-scheduler/internal/pkg/ignoreregex"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
@@ -40,13 +41,14 @@ func main() {
 
 	// get the user options
 	var originalImages, upscaledImages, cacheDir path.Path
-	var realesrganPath string
+	var realesrganPath, skipFile string
 	var daemon, removeOriginals, h, ver bool
 
 	flag.Var(&originalImages, "original-images-dir", "path to the original (input) images")
 	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
 	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
 	flag.StringVar(&realesrganPath, "realesrgan-path", "realesrgan-ncnn-vulkan", "where the realesrgan binary is")
+	flag.StringVar(&skipFile, "skip-file", "", "file with directories to skip, one per line")
 	flag.BoolVar(&removeOriginals, "remove-originals", false, "delete original images after upsizing")
 	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
 	flag.BoolVar(&ver, "version", false, "print version")
@@ -106,9 +108,19 @@ func main() {
 		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
 		var originalsDir = filepath.Join(originalImages.ComputedPath.AbsolutePath, upsizedBase)
 
+		var re, err = ignoreregex.SkipFileToRegexp(skipFile)
+		if err != nil {
+			log.Fatalf("error creating regex to skip dirs: %s", err)
+		}
+
+		if re.MatchString(originalsDir) {
+			log.Infof("skipping %s ...", originalsDir)
+			continue
+		}
+
 		rl.SetOutputPath(upsizedDir.AbsolutePath)
 
-		var originalImages, err = path.List(originalsDir, path.NewRegexListFilter(fs.ImageExtensionRegex))
+		originalImages, err := path.List(originalsDir, path.NewRegexListFilter(fs.ImageExtensionRegex))
 		if err != nil {
 			log.Fatalf("error getting existing original images: %s", err)
 		}
