@@ -1,5 +1,5 @@
 REPOPATH = github.com/kmulvey/imagedup
-BUILDS := cleanup client comparedirs
+BUILDS := auto cleanup client comparedirs local managecache
 
 build: 
 	for target in $(BUILDS); do \
