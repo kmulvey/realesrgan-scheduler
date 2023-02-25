@@ -8,14 +8,13 @@ require (
 	github.com/gofiber/fiber/v2 v2.41.0
 	github.com/gofiber/websocket/v2 v2.1.3
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/websocket v1.5.0
 	github.com/gosuri/uilive v0.0.4
 	github.com/kmulvey/path v0.14.2
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
 	go.szostok.io/version v1.1.0
-	golang.org/x/image v0.3.0
+	golang.org/x/image v0.5.0
 )
 
 require (
