@@ -3,10 +3,18 @@ before:
     # You may remove this if you don't use go modules.
     - go mod tidy
 builds:
-  - id: radeon_exporter
-    main: ./
-    goos:
-      - linux
+  - id: realesrgan-scheduler-auto
+    main: ./cmd/auto/
+
+  - id: realesrgan-scheduler-cleanup
+    main: ./cmd/cleanup/
+
+  - id: realesrgan-scheduler-comparedirs
+    main: ./cmd/comparedirs/
+
+  - id: realesrgan-scheduler-local
+    main: ./cmd/local/
+    
 archives:
   - id: foo
     name_template: >-
