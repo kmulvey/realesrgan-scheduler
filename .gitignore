@@ -19,6 +19,7 @@ cmd/auto/auto
 cmd/cleanup/cleanup
 cmd/comparedirs/comparedirs
 cmd/managecache/managecache
+cmd/local/local
 retiredskiplist.txt
 largeskiplist.txt
 .vscode

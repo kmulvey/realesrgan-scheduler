@@ -7,7 +7,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -100,8 +100,13 @@ func SetupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 			}
 
 			// verify the sha
-			fileHandle.Seek(0, 0)
-			imageBytes, err := ioutil.ReadAll(fileHandle)
+			_, err = fileHandle.Seek(0, 0)
+			if err != nil {
+				log.Errorf("unable to rewind the file, err: %s", err.Error())
+				return c.Status(http.StatusInternalServerError).SendString("unable to rewind the file, err: " + err.Error())
+			}
+
+			imageBytes, err := io.ReadAll(fileHandle)
 			if err != nil {
 				log.Errorf("unable to decode image, err: %s", err.Error())
 				return c.Status(http.StatusInternalServerError).SendString("unable to decode image, err: " + err.Error())
@@ -137,7 +142,7 @@ func SetupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 		var allowed, ok = c.Locals("allowed").(bool)
 		if ok && allowed {
 			for upsizedImage := range upsizedImages {
-				var imageBytes, err = ioutil.ReadFile(upsizedImage)
+				var imageBytes, err = os.ReadFile(upsizedImage)
 				if err != nil {
 					log.Errorf("ws error: %s", err.Error())
 					// TODO
