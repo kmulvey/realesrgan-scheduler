@@ -1,20 +1,72 @@
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
 builds:
+  
   - id: realesrgan-scheduler-auto
     main: ./cmd/auto/
+    binary: realesrgan-scheduler-auto
+    ldflags:
+      - -s -w -X main.build={{.Version}}
+    goos:
+      - freebsd
+      - windows
+      - darwin
+      - linux
+      - js
+
+    goarch:
+      - amd64
+      - arm64
 
   - id: realesrgan-scheduler-cleanup
     main: ./cmd/cleanup/
+    binary: realesrgan-scheduler-cleanup
+    ldflags:
+      - -s -w -X main.build={{.Version}}
+    goos:
+      - freebsd
+      - windows
+      - darwin
+      - linux
+      - js
+
+    goarch:
+      - amd64
+      - arm64
 
   - id: realesrgan-scheduler-comparedirs
     main: ./cmd/comparedirs/
+    binary: realesrgan-scheduler-comparedirs
+    ldflags:
+      - -s -w -X main.build={{.Version}}
+    goos:
+      - freebsd
+      - windows
+      - darwin
+      - linux
+      - js
+
+    goarch:
+      - amd64
+      - arm64
 
   - id: realesrgan-scheduler-local
     main: ./cmd/local/
-    
+    binary: realesrgan-scheduler-local
+    ldflags:
+      - -s -w -X main.build={{.Version}}
+    goos:
+      - freebsd
+      - windows
+      - darwin
+      - linux
+      - js
+
+    goarch:
+      - amd64
+      - arm64
+
 archives:
   - id: foo
     name_template: >-
