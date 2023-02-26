@@ -16,6 +16,7 @@ import (
 	"github.com/gosuri/uilive"
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,7 +61,7 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 	log.WithFields(log.Fields{
 		"remaining queue length": rl.Queue.Len(),
 		"upsized":                upsizedImagePath,
-		"upsized size":           prettyPrintFileSizes(upsizedImage.FileInfo.Size()),
+		"upsized size":           PrettyPrintFileSizes(upsizedImage.FileInfo.Size()),
 		"duration":               duration,
 	}).Info("upsized")
 
@@ -72,27 +73,11 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 	}
 }
 
-// prettyPrintFileSizes takes file sizes in int and returns a human readable size e.g. "140mb" as a string.
-func prettyPrintFileSizes(filesize int64) string {
-
-	if filesize < 1_000 {
-		return strconv.Itoa(int(filesize)) + " bytes"
-	} else if filesize < 1_000_000 {
-		filesize /= 1_000
-		return strconv.Itoa(int(filesize)) + " kb"
-	} else if filesize < 1_000_000_000 {
-		filesize /= 1_000_000
-		return strconv.Itoa(int(filesize)) + " mb"
-	} else if filesize < 1_000_000_000_000 {
-		filesize /= 1_000_000_000
-		return strconv.Itoa(int(filesize)) + " gb"
-	}
-	return ""
-}
-
 // runCmdAndCaptureOutput runs the realesrgan command and captures stdout and passes it to logProgress for single line logging.
 func runCmdAndCaptureOutput(cmdPath, outputExt, inputImagePath, upsizedImagePath string, gpuID int) error {
 
+	// these variables were linted up the chain
+	//nolint:gosec
 	var cmd = exec.Command(cmdPath, "-f", outputExt, "-g", strconv.Itoa(gpuID), "-n", "realesrgan-x4plus", "-i", inputImagePath, "-o", upsizedImagePath)
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
@@ -130,6 +115,7 @@ func runCmdAndCaptureOutput(cmdPath, outputExt, inputImagePath, upsizedImagePath
 
 // logProgress prints the progress loges on a single updating line with uilive.
 func logProgress(r io.Reader) error {
+
 	writer := uilive.New()
 	// start listening for updates and render
 	writer.Start()
@@ -137,7 +123,7 @@ func logProgress(r io.Reader) error {
 
 	buf := make([]byte, 1024)
 	for {
-		n, err := r.Read(buf[:])
+		n, err := r.Read(buf)
 		if n > 0 {
 			d := buf[:n]
 			var rune, _ = utf8.DecodeRune(buf[0:1])

@@ -9,13 +9,13 @@ import (
 func TestPrettyPrintFileSizes(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "100 bytes", prettyPrintFileSizes(100))
-	assert.Equal(t, "1 kb", prettyPrintFileSizes(1000))
-	assert.Equal(t, "10 kb", prettyPrintFileSizes(10000))
-	assert.Equal(t, "100 kb", prettyPrintFileSizes(100000))
-	assert.Equal(t, "1 mb", prettyPrintFileSizes(1000000))
-	assert.Equal(t, "10 mb", prettyPrintFileSizes(10000000))
-	assert.Equal(t, "100 mb", prettyPrintFileSizes(100000000))
-	assert.Equal(t, "987 mb", prettyPrintFileSizes(987000000))
-	assert.Equal(t, "1 gb", prettyPrintFileSizes(1000000000))
+	assert.Equal(t, "100 bytes", PrettyPrintFileSizes(100))
+	assert.Equal(t, "1 kb", PrettyPrintFileSizes(1000))
+	assert.Equal(t, "10 kb", PrettyPrintFileSizes(10000))
+	assert.Equal(t, "100 kb", PrettyPrintFileSizes(100000))
+	assert.Equal(t, "1 mb", PrettyPrintFileSizes(1000000))
+	assert.Equal(t, "10 mb", PrettyPrintFileSizes(10000000))
+	assert.Equal(t, "100 mb", PrettyPrintFileSizes(100000000))
+	assert.Equal(t, "987 mb", PrettyPrintFileSizes(987000000))
+	assert.Equal(t, "1 gb", PrettyPrintFileSizes(1000000000))
 }

@@ -4,11 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"path/filepath"
-	"strconv"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kmulvey/path"
+	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
 	"github.com/kmulvey/realesrgan-scheduler/internal/pkg/ignoreregex"
 )
 
@@ -67,25 +67,9 @@ func processDir(dir path.Entry, originalImages, upscaledImages []path.Entry) {
 		if len(originalsMap) < 50 {
 			for originalImageName, originalImage := range originalsMap {
 				if originalImage.FileInfo.Size() < 1_000_000 {
-					fmt.Printf("%s %s \n", prettyPrintFileSizes(originalImage.FileInfo.Size()), originalImageName)
+					fmt.Printf("%s %s \n", local.PrettyPrintFileSizes(originalImage.FileInfo.Size()), originalImageName)
 				}
 			}
 		}
 	}
-}
-
-func prettyPrintFileSizes(filesize int64) string {
-	if filesize < 1_000 {
-		return strconv.Itoa(int(filesize)) + " bytes"
-	} else if filesize < 1_000_000 {
-		filesize /= 1_000
-		return strconv.Itoa(int(filesize)) + " kb"
-	} else if filesize < 1_000_000_000 {
-		filesize /= 1_000_000
-		return strconv.Itoa(int(filesize)) + " mb"
-	} else if filesize < 1_000_000_000_000 {
-		filesize /= 1_000_000_000
-		return strconv.Itoa(int(filesize)) + " gb"
-	}
-	return ""
 }

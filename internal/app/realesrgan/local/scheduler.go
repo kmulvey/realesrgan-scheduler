@@ -14,7 +14,7 @@ func (rl *RealesrganLocal) UpsizeQueue(gpuID int) {
 		log.WithFields(log.Fields{
 			"remaining queue length": rl.Queue.Len(),
 			"original":               inputImage.AbsolutePath,
-			"original size":          prettyPrintFileSizes(inputImage.FileInfo.Size()),
+			"original size":          PrettyPrintFileSizes(inputImage.FileInfo.Size()),
 		}).Info("upscaling")
 
 		rl.Upsize(inputImage, gpuID)

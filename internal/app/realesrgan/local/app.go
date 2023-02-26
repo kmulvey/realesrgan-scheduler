@@ -93,7 +93,7 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 				log.WithFields(log.Fields{
 					"remaining queue length": rl.Queue.Len(),
 					"original":               img.AbsolutePath,
-					"original size":          prettyPrintFileSizes(img.FileInfo.Size()),
+					"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
 				}).Info("upscaling")
 
 			default:
@@ -105,7 +105,7 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 					log.WithFields(log.Fields{
 						"remaining queue length": rl.Queue.Len(),
 						"original":               img.AbsolutePath,
-						"original size":          prettyPrintFileSizes(img.FileInfo.Size()),
+						"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
 					}).Info("upscaling")
 				}
 			}
