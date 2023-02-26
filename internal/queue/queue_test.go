@@ -9,6 +9,8 @@ import (
 )
 
 func TestAdd(t *testing.T) {
+	t.Parallel()
+
 	var queue = New(false)
 
 	var small, err = path.NewEntry("./testfiles/small")

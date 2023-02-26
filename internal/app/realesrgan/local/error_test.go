@@ -8,6 +8,8 @@ import (
 )
 
 func TestError(t *testing.T) {
+	t.Parallel()
+
 	scanner := bufio.NewScanner(strings.NewReader(sample))
 
 	scanner.Split(bufio.ScanLines)
