@@ -72,6 +72,7 @@ func (q *Queue) Add(newImage path.Entry) error {
 		return nil
 	}
 
+ElementLoop:
 	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
 
 		// this should never happen but we check it for checking's sake
@@ -88,17 +89,22 @@ func (q *Queue) Add(newImage path.Entry) error {
 
 		var hasNext = currElement.Next() != nil
 
-		if newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && hasNext {
-			continue
-		} else if newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && !hasNext {
+		switch {
+
+		case newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && hasNext:
+			continue ElementLoop
+
+		case newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && !hasNext:
 			q.List.InsertAfter(newImage, currElement)
-			break
-		} else if newImage.FileInfo.Size() <= currEntry.FileInfo.Size() {
+			break ElementLoop
+
+		case newImage.FileInfo.Size() <= currEntry.FileInfo.Size():
 			q.List.InsertBefore(newImage, currElement)
-			break
-		} else {
+			break ElementLoop
+
+		default:
 			q.List.InsertBefore(newImage, currElement)
-			break
+			break ElementLoop
 		}
 	}
 

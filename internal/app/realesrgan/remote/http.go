@@ -86,7 +86,7 @@ func SetupWebServer(originalImages, upsizedImages chan string, imageDir, usernam
 
 			imagePath = filepath.Join(imageDir, imageArr[0].Filename)
 
-			// open and decode image to make sure its actaully an image
+			// open and decode image to make sure its actually an image
 			var fileHandle, err = os.Open(imagePath)
 			defer fileHandle.Close()
 			if err != nil {
