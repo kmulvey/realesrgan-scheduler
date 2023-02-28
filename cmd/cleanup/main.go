@@ -15,13 +15,13 @@ import (
 )
 
 func main() {
-	var originalImages path.Path
-	var upscaledImages path.Path
+	var originalImages path.Entry
+	var upscaledImagesDir path.Entry
 	var skipFile string
 	var dryRun, v, h bool
 
 	flag.Var(&originalImages, "originals-dir", "")
-	flag.Var(&upscaledImages, "upscaled-dir", "")
+	flag.Var(&upscaledImagesDir, "upscaled-dir", "")
 	flag.StringVar(&skipFile, "skip-file", "", "file with directories to skip, one per line")
 	flag.BoolVar(&dryRun, "dry-run", false, "")
 	flag.BoolVar(&v, "version", false, "print version")
@@ -43,10 +43,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	for _, dir := range path.FilterEntities(upscaledImages.Files, path.NewDirEntitiesFilter()) {
+	var upscaledImages, err = path.List(upscaledImagesDir.AbsolutePath, 2, path.NewDirEntitiesFilter())
+	if err != nil {
+		log.Fatalf("error getting existing upsized dirs: %s", err)
+	}
+
+	for _, dir := range upscaledImages {
 
 		var upsizedBase = filepath.Base(dir.AbsolutePath)
-		var leafDir = filepath.Join(originalImages.ComputedPath.AbsolutePath, upsizedBase)
+		var leafDir = filepath.Join(originalImages.AbsolutePath, upsizedBase)
 
 		var re, err = ignoreregex.SkipFileToRegexp(skipFile)
 		if err != nil {
@@ -59,12 +64,12 @@ func main() {
 		}
 
 		var baseDir = filepath.Base(dir.AbsolutePath)
-		originalfiles, err := path.List(filepath.Join(originalImages.ComputedPath.AbsolutePath, baseDir), path.NewFileListFilter())
+		originalfiles, err := path.List(filepath.Join(originalImages.AbsolutePath, baseDir), 2, path.NewFileEntitiesFilter())
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		upsizedfiles, err := path.List(dir.AbsolutePath, path.NewFileListFilter())
+		upsizedfiles, err := path.List(dir.AbsolutePath, 2, path.NewFileEntitiesFilter())
 		if err != nil {
 			log.Fatal(err)
 		}
