@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// get the user options
-	var cacheDir path.Path
+	var cacheDir path.Entry
 	var searchTerm, addImage string
 	var h, ver bool
 
@@ -42,16 +42,16 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.Infof("Config: cacheDir: %s, searchTerm: %s", cacheDir.ComputedPath.AbsolutePath, searchTerm)
+	log.Infof("Config: cacheDir: %s, searchTerm: %s", cacheDir.String(), searchTerm)
 
-	var db, err = cache.New(cacheDir.ComputedPath.AbsolutePath)
+	var db, err = cache.New(cacheDir.String())
 	if err != nil {
 		log.Errorf("error opening badger dir: %s", err)
 	}
 
 	addImage = strings.TrimSpace(addImage)
 	if addImage != "" {
-		var entry, err = path.NewEntry(addImage)
+		var entry, err = path.NewEntry(addImage, 0)
 		if err != nil {
 			log.Fatalf("image: %s does not exist", addImage)
 		}

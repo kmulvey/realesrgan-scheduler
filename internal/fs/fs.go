@@ -11,6 +11,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kmulvey/path"
+	log "github.com/sirupsen/logrus"
 )
 
 // ImageExtensionRegex are all the supported image extensions, and the only ones that will be included in file search/globbing.
@@ -65,18 +66,33 @@ func MakeDir(path string) error {
 func WatchDir(ctx context.Context, inputDir, outputDir string, images chan path.Entry) error {
 
 	var events = make(chan path.WatchEvent)
+	var errors = make(chan error)
 
 	go func() {
-		for e := range events {
-			if !AlreadyUpsized(e.Entry, outputDir) {
-				images <- e.Entry
+		defer close(images)
+
+		for {
+			select {
+			case e, open := <-events:
+				if !open {
+					return
+				}
+
+				if !AlreadyUpsized(e.Entry, outputDir) {
+					images <- e.Entry
+				}
+
+			case err, open := <-errors:
+				if !open {
+					return
+				}
+				log.Errorf("error from WatchDir, %s", err)
 			}
 		}
-		close(images)
+
 	}()
 
-	if err := path.WatchDir(ctx, inputDir, events, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$"))); err != nil {
-		return fmt.Errorf("error in watchDir: %w", err)
-	}
+	path.WatchDir(ctx, inputDir, 2, false, events, errors, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(ImageExtensionRegex))
+
 	return nil
 }

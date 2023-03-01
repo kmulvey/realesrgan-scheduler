@@ -40,7 +40,7 @@ func main() {
 	}()
 
 	// get the user options
-	var originalImages, upscaledImages, cacheDir path.Path
+	var originalImages, upscaledImages, cacheDir path.Entry
 	var realesrganPath, skipFile string
 	var daemon, removeOriginals, h, ver bool
 
@@ -70,19 +70,19 @@ func main() {
 	}
 
 	log.Infof("Config: originalImages: %s, upscaledImages: %s, realesrganPath: %s, cacheDir: %s, removeOriginals: %t, daemon: %t",
-		originalImages.ComputedPath.AbsolutePath,
-		upscaledImages.ComputedPath.AbsolutePath,
+		originalImages.AbsolutePath,
+		upscaledImages.AbsolutePath,
 		realesrganPath,
-		cacheDir.ComputedPath.AbsolutePath,
+		cacheDir.AbsolutePath,
 		removeOriginals,
 		daemon)
 
-	var upsizedDirs, err = path.List(upscaledImages.ComputedPath.AbsolutePath, path.NewDirListFilter())
+	var upsizedDirs, err = path.List(upscaledImages.AbsolutePath, 2, false, path.NewDirEntitiesFilter())
 	if err != nil {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.ComputedPath.AbsolutePath, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 1, removeOriginals)
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, 1, removeOriginals)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
@@ -106,7 +106,7 @@ func main() {
 	for _, upsizedDir := range upsizedDirs {
 
 		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
-		var originalsDir = filepath.Join(originalImages.ComputedPath.AbsolutePath, upsizedBase)
+		var originalsDir = filepath.Join(originalImages.AbsolutePath, upsizedBase)
 
 		var re, err = ignoreregex.SkipFileToRegexp(skipFile)
 		if err != nil {
@@ -120,7 +120,7 @@ func main() {
 
 		rl.SetOutputPath(upsizedDir.AbsolutePath)
 
-		originalImages, err := path.List(originalsDir, path.NewRegexListFilter(fs.ImageExtensionRegex))
+		originalImages, err := path.List(originalsDir, 2, false, path.NewRegexEntitiesFilter(fs.ImageExtensionRegex))
 		if err != nil {
 			log.Fatalf("error getting existing original images: %s", err)
 		}

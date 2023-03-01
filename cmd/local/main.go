@@ -5,7 +5,6 @@ import (
 	"flag"
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -41,7 +40,7 @@ func main() {
 	}()
 
 	// get the user options
-	var originalImages, upscaledImages, cacheDir path.Path
+	var originalImages, upscaledImages, cacheDir path.Entry
 	var realesrganPath string
 	var daemon, removeOriginals, h, ver bool
 
@@ -70,19 +69,19 @@ func main() {
 	}
 
 	log.Infof("Config: originalImages: %s, upscaledImages: %s, realesrganPath: %s, cacheDir: %s, removeOriginals: %t, daemon: %t",
-		originalImages.ComputedPath.AbsolutePath,
-		upscaledImages.ComputedPath.AbsolutePath,
+		originalImages.String(),
+		upscaledImages.String(),
 		realesrganPath,
-		cacheDir.ComputedPath.AbsolutePath,
+		cacheDir.String(),
 		removeOriginals,
 		daemon)
 
-	var images, err = path.List(originalImages.ComputedPath.AbsolutePath, path.NewRegexListFilter(fs.ImageExtensionRegex))
+	var images, err = path.List(originalImages.String(), 1, false, path.NewRegexEntitiesFilter(fs.ImageExtensionRegex))
 	if err != nil {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.ComputedPath.AbsolutePath, realesrganPath, upscaledImages.ComputedPath.AbsolutePath, 1, removeOriginals)
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.String(), realesrganPath, upscaledImages.String(), 1, removeOriginals)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
@@ -100,9 +99,15 @@ func main() {
 		var watchEvents = make(chan path.WatchEvent)
 		rl.Watch(watchEvents)
 
-		if err := path.WatchDir(ctx, originalImages.ComputedPath.AbsolutePath, watchEvents, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$"))); err != nil {
-			log.Fatalf("error in watchDir: %s", err)
-		}
+		var errors = make(chan error)
+		go func() {
+			for err := range errors {
+				log.Errorf("error from WatchDir, %s", err)
+			}
+		}()
+
+		path.WatchDir(ctx, originalImages.String(), 2, false, watchEvents, errors, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(fs.ImageExtensionRegex))
+
 	} else {
 
 		err = rl.Run(nil) // images were already added above

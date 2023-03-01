@@ -43,7 +43,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	var upscaledImages, err = path.List(upscaledImagesDir.AbsolutePath, 2, path.NewDirEntitiesFilter())
+	var upscaledImages, err = path.List(upscaledImagesDir.AbsolutePath, 2, false, path.NewDirEntitiesFilter())
 	if err != nil {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
@@ -64,12 +64,12 @@ func main() {
 		}
 
 		var baseDir = filepath.Base(dir.AbsolutePath)
-		originalfiles, err := path.List(filepath.Join(originalImages.AbsolutePath, baseDir), 2, path.NewFileEntitiesFilter())
+		originalfiles, err := path.List(filepath.Join(originalImages.AbsolutePath, baseDir), 2, false, path.NewFileEntitiesFilter())
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		upsizedfiles, err := path.List(dir.AbsolutePath, 2, path.NewFileEntitiesFilter())
+		upsizedfiles, err := path.List(dir.AbsolutePath, 2, false, path.NewFileEntitiesFilter())
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -13,13 +13,13 @@ func TestAdd(t *testing.T) {
 
 	var queue = New(false)
 
-	var small, err = path.NewEntry("./testfiles/small")
+	var small, err = path.NewEntry("./testfiles/small", 1)
 	assert.NoError(t, err)
 
-	medium, err := path.NewEntry("./testfiles/medium")
+	medium, err := path.NewEntry("./testfiles/medium", 1)
 	assert.NoError(t, err)
 
-	large, err := path.NewEntry("./testfiles/large")
+	large, err := path.NewEntry("./testfiles/large", 1)
 	assert.NoError(t, err)
 
 	assert.NoError(t, queue.Add(small))
