@@ -1,6 +1,8 @@
 package local
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // PrettyPrintFileSizes takes file sizes in int and returns a human readable size e.g. "140mb" as a string.
 func PrettyPrintFileSizes(filesize int64) string {
