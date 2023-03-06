@@ -9,10 +9,10 @@ require (
 	github.com/gofiber/websocket/v2 v2.1.4
 	github.com/google/uuid v1.3.0
 	github.com/gosuri/uilive v0.0.4
-	github.com/kmulvey/path v1.19.0
+	github.com/kmulvey/path v1.20.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	go.szostok.io/version v1.1.0
 	golang.org/x/image v0.5.0
 )
