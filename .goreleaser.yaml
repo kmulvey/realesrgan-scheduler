@@ -35,22 +35,6 @@ builds:
       - amd64
       - arm64
 
-  - id: realesrgan-scheduler-comparedirs
-    main: ./cmd/comparedirs/
-    binary: realesrgan-scheduler-comparedirs
-    ldflags:
-      - -s -w -X main.build={{.Version}}
-    goos:
-      - freebsd
-      - windows
-      - darwin
-      - linux
-      - js
-
-    goarch:
-      - amd64
-      - arm64
-
   - id: realesrgan-scheduler-local
     main: ./cmd/local/
     binary: realesrgan-scheduler-local
