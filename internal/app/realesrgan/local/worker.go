@@ -54,7 +54,7 @@ func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
 	upsizedImage, err := path.NewEntry(upsizedImagePath, 0)
 	if err != nil {
 		log.Errorf("error creating NewEntry for the upsized image %s, err: %s", upsizedImagePath, err)
-
+		return
 	}
 
 	// if we got here it was successful
