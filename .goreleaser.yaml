@@ -78,7 +78,9 @@ nfpms:
     package_name: realesrgan-scheduler
 
     builds:
-      - realesrgan-scheduler
+      - realesrgan-scheduler-auto
+      - realesrgan-scheduler-cleanup
+      - realesrgan-scheduler-local
 
     # Your app's vendor.
     vendor: Kevin Mulvey
