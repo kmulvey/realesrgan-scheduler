@@ -4,5 +4,10 @@
 
 
 ```
-./realesrgan-scheduler-auto -realesrgan-path ~/bin/realesrgan-ncnn-vulkan-20220424-ubuntu/realesrgan-ncnn-vulkan -original-images-dir ~/Photos/  -upscaled-images-dir ~/upscayl/ -cache-dir ./skipcache/ -skip-file ../../largeskiplist.txt
+./realesrgan-scheduler-auto \
+-realesrgan-path ~/bin/realesrgan-ncnn-vulkan-20220424-ubuntu/realesrgan-ncnn-vulkan \
+-original-images-dir ~/Photos/ \
+-upscaled-images-dir ~/upscayl/ \
+-cache-dir ./skipcache/ \
+-skip-file ../../largeskiplist.txt
 ```
