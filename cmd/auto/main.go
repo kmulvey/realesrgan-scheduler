@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jaypipes/ghw"
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
 	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
@@ -43,12 +44,14 @@ func main() {
 	var originalImages, upscaledImages, cacheDir path.Entry
 	var realesrganPath, skipFile string
 	var daemon, removeOriginals, h, ver bool
+	var numGPUs int
 
 	flag.Var(&originalImages, "original-images-dir", "path to the original (input) images")
 	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
 	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
 	flag.StringVar(&realesrganPath, "realesrgan-path", "realesrgan-ncnn-vulkan", "where the realesrgan binary is")
 	flag.StringVar(&skipFile, "skip-file", "", "file with directories to skip, one per line")
+	flag.IntVar(&numGPUs, "num-gpus", 1, "how many gpus to use")
 	flag.BoolVar(&removeOriginals, "remove-originals", false, "delete original images after upsizing")
 	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
 	flag.BoolVar(&ver, "version", false, "print version")
@@ -69,20 +72,28 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.Infof("Config: originalImages: %s, upscaledImages: %s, realesrganPath: %s, cacheDir: %s, removeOriginals: %t, daemon: %t",
+	if gpus, err := getNumGPUs(); err != nil {
+		log.Fatal("error getting gpu info: ", err)
+	} else if numGPUs > gpus {
+		log.Fatalf("cannot use %d gpus as there are only %d.", numGPUs, gpus)
+	}
+
+	log.Infof("Config: originalImages: %s, upscaledImages: %s, realesrganPath: %s, cacheDir: %s, skipFIle: %s, removeOriginals: %t, daemon: %t, numGpus: %d",
 		originalImages.AbsolutePath,
 		upscaledImages.AbsolutePath,
 		realesrganPath,
 		cacheDir.AbsolutePath,
+		skipFile,
 		removeOriginals,
-		daemon)
+		daemon,
+		numGPUs)
 
 	var upsizedDirs, err = path.List(upscaledImages.AbsolutePath, 2, false, path.NewDirEntitiesFilter())
 	if err != nil {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, 1, removeOriginals)
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, numGPUs, removeOriginals)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
@@ -136,4 +147,14 @@ func main() {
 			log.Errorf("error in Run(): %s", err)
 		}
 	}
+}
+
+func getNumGPUs() (int, error) {
+
+	var gpu, err = ghw.GPU()
+	if err != nil {
+		return 0, err
+	}
+
+	return len(gpu.GraphicsCards), nil
 }

@@ -64,7 +64,6 @@ func (rl *RealesrganLocal) Run(images []path.Entry) error {
 		if err != nil {
 			return fmt.Errorf("problem adding existing files to queue: %w", err)
 		}
-
 	}
 
 	rl.UpsizeQueue(0)
@@ -79,7 +78,7 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 
 	// start up conversion loop
 	var images = make(chan path.Entry)
-	rl.UpsizeWatch(rl.NumGPUs, images)
+	rl.UpsizeWatch(images)
 
 	// listen for events from the queue and when we get one send NextImage() to the conversion loop.
 	go func() {
