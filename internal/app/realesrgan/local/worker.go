@@ -23,7 +23,9 @@ import (
 var outputExt = "jpg"
 
 // Upsize does the actual upsizing work.
-func (rl *RealesrganLocal) Upsize(inputImage path.Entry, gpuID int) {
+func (rl *RealesrganLocal) Upsize(wg *sync.WaitGroup, inputImage path.Entry, gpuID int) {
+
+	defer wg.Done()
 
 	// inputImage is the abs path
 	var upsizedImagePath = filepath.Base(inputImage.AbsolutePath)
@@ -93,11 +95,11 @@ func runCmdAndCaptureOutput(cmdPath, outputExt, inputImagePath, upsizedImagePath
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		errStdout = logProgress(stdoutIn)
+		errStdout = logProgress(filepath.Base(inputImagePath), stdoutIn)
 		wg.Done()
 	}()
 
-	if err := logProgress(stderrIn); err != nil {
+	if err := logProgress(filepath.Base(inputImagePath), stderrIn); err != nil {
 		return fmt.Errorf("error capturing stdErr output: %w", err)
 	}
 
@@ -114,7 +116,7 @@ func runCmdAndCaptureOutput(cmdPath, outputExt, inputImagePath, upsizedImagePath
 }
 
 // logProgress prints the progress loges on a single updating line with uilive.
-func logProgress(r io.Reader) error {
+func logProgress(imagePath string, r io.Reader) error {
 
 	writer := uilive.New()
 	// start listening for updates and render
@@ -128,7 +130,7 @@ func logProgress(r io.Reader) error {
 			d := buf[:n]
 			var rune, _ = utf8.DecodeRune(buf[0:1])
 			if unicode.IsDigit(rune) {
-				fmt.Fprintf(writer, "progress: %s \n", strings.TrimSpace(string(d)))
+				fmt.Fprintf(writer, "progress: %s, %s \n", imagePath, strings.TrimSpace(string(d)))
 				time.Sleep(time.Millisecond * 10) // required for uilive
 			}
 		}

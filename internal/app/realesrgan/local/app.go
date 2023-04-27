@@ -66,7 +66,7 @@ func (rl *RealesrganLocal) Run(images []path.Entry) error {
 		}
 	}
 
-	rl.UpsizeQueue(0)
+	rl.UpsizeQueue()
 
 	return nil
 }
@@ -78,7 +78,7 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 
 	// start up conversion loop
 	var images = make(chan path.Entry)
-	rl.UpsizeWatch(images)
+	// rl.UpsizeWatch(images)
 
 	// listen for events from the queue and when we get one send NextImage() to the conversion loop.
 	go func() {
