@@ -8,7 +8,7 @@ require (
 	github.com/gosuri/uilive v0.0.4
 	github.com/jaypipes/ghw v0.10.0
 	github.com/kmulvey/path v1.21.0
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.2
 	go.szostok.io/version v1.1.0
