@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/cache"
@@ -78,11 +79,13 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 
 	// start up conversion loop
 	var images = make(chan path.Entry)
-	// rl.UpsizeWatch(images)
+	var wg sync.WaitGroup
+	rl.UpsizeWatch(&wg, images)
 
 	// listen for events from the queue and when we get one send NextImage() to the conversion loop.
 	go func() {
 		for {
+			wg.Add(1)
 			select {
 			// handle new files that get added to the dir after we start
 			case <-rl.Queue.Notifications:
@@ -122,6 +125,7 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 		}
 	}()
 
+	wg.Wait()
 }
 
 // AddImage adds the given image to the queue if the upsized path does not already exist.
