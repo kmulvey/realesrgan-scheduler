@@ -31,7 +31,7 @@ func (rl *RealesrganLocal) UpsizeQueue() {
 
 // UpsizeWatch allows for the running of more than one worker thread at once for use with multiple gpus.
 func (rl *RealesrganLocal) UpsizeWatch(wg *sync.WaitGroup, inputImages chan path.Entry) {
-	for i := 0; i <= rl.NumGPUs; i++ {
+	for i := rl.NumGPUs - 1; i >= 0; i-- {
 		i := i
 		go rl.UpsizeLoop(wg, i, inputImages)
 	}
