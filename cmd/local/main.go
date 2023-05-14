@@ -43,6 +43,7 @@ func main() {
 	var originalImages, upscaledImages, cacheDir path.Entry
 	var realesrganPath string
 	var daemon, removeOriginals, h, ver bool
+	var numGPUs int
 
 	flag.Var(&originalImages, "original-images-dir", "path to the original (input) images")
 	flag.Var(&upscaledImages, "upscaled-images-dir", "where to store the upscaled images")
@@ -50,6 +51,7 @@ func main() {
 	flag.StringVar(&realesrganPath, "realesrgan-path", "realesrgan-ncnn-vulkan", "where the realesrgan binary is")
 	flag.BoolVar(&removeOriginals, "remove-originals", false, "delete original images after upsizing")
 	flag.BoolVar(&daemon, "d", false, "run as a daemon (does not quit)")
+	flag.IntVar(&numGPUs, "num-gpus", 1, "how many gpus to use")
 	flag.BoolVar(&ver, "version", false, "print version")
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
@@ -81,7 +83,7 @@ func main() {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.String(), realesrganPath, upscaledImages.String(), 1, removeOriginals)
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.String(), realesrganPath, upscaledImages.String(), numGPUs, removeOriginals)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
