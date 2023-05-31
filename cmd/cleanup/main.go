@@ -55,7 +55,8 @@ func main() {
 
 		var re, err = ignoreregex.SkipFileToRegexp(skipFile)
 		if err != nil {
-			log.Fatalf("error creating regex to skip dirs: %s", err)
+			log.Errorf("error creating regex to skip dirs: %s", err)
+			continue
 		}
 
 		if re.MatchString(leafDir) {
@@ -66,12 +67,14 @@ func main() {
 		var baseDir = filepath.Base(dir.AbsolutePath)
 		originalfiles, err := path.List(filepath.Join(originalImages.AbsolutePath, baseDir), 2, false, path.NewFileEntitiesFilter())
 		if err != nil {
-			log.Fatal(err)
+			log.Errorf("error listing original dir: %s", err)
+			continue
 		}
 
 		upsizedfiles, err := path.List(dir.AbsolutePath, 2, false, path.NewFileEntitiesFilter())
 		if err != nil {
-			log.Fatal(err)
+			log.Errorf("error listing upsized dir: %s", err)
+			continue
 		}
 		processDir(originalfiles, upsizedfiles, dryRun)
 	}

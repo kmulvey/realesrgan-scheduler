@@ -133,7 +133,7 @@ func main() {
 
 		originalImages, err := path.List(originalsDir, 2, false, path.NewRegexEntitiesFilter(fs.ImageExtensionRegex))
 		if err != nil {
-			log.Fatalf("error getting existing original images: %s", err)
+			log.Errorf("error getting existing original images: %s", err)
 		}
 
 		if len(originalImages) == 0 {
