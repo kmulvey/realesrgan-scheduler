@@ -6,7 +6,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gosuri/uilive v0.0.4
-	github.com/jaypipes/ghw v0.10.0
+	github.com/jaypipes/ghw v0.11.0
 	github.com/kmulvey/path v1.21.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/sirupsen/logrus v1.9.3
