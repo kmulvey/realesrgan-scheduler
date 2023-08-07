@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -21,9 +20,7 @@ import (
 var promNamespace = "realesrgan_scheduler"
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:8080", nil))
-	}()
+
 	var ctx, cancel = context.WithCancel(context.Background())
 
 	log.SetFormatter(&log.TextFormatter{
