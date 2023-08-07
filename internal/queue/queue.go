@@ -69,6 +69,9 @@ func (q *Queue) Add(newImage path.Entry) error {
 	// init
 	if q.List.Len() == 0 {
 		q.List.PushFront(newImage)
+		if q.Notifications != nil {
+			q.Notifications <- struct{}{}
+		}
 		return nil
 	}
 
