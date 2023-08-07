@@ -93,7 +93,7 @@ func main() {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, numGPUs, removeOriginals)
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, numGPUs, removeOriginals, false)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
