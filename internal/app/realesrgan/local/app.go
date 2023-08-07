@@ -82,12 +82,25 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 	var wg sync.WaitGroup
 	rl.UpsizeWatch(&wg, images)
 
+	for rl.Queue.Len() > 0 {
+		var img = rl.Queue.NextImage()
+		images <- img
+		wg.Add(1)
+
+		log.WithFields(log.Fields{
+			"remaining queue length": rl.Queue.Len(),
+			"original":               img.AbsolutePath,
+			"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
+		}).Info("upscaling")
+	}
+
 	// listen for events from the queue and when we get one send NextImage() to the conversion loop.
 	go func() {
 		for {
 			select {
-			// handle new files that get added to the dir after we start
 			case <-rl.Queue.Notifications:
+				log.Info("read notif")
+				// handle new files that get added to the dir after we start
 				var img = rl.Queue.NextImage()
 				images <- img
 				wg.Add(1)
@@ -98,35 +111,21 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 					"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
 				}).Info("upscaling")
 
-			default:
-				// handle all the existing image in the dir
-				if rl.Queue.Len() > 0 {
-					var img = rl.Queue.NextImage()
-					images <- img
-					wg.Add(1)
-
-					log.WithFields(log.Fields{
-						"remaining queue length": rl.Queue.Len(),
-						"original":               img.AbsolutePath,
-						"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
-					}).Info("upscaling")
+			// add watch events to the queue. DO NOT add these directly to the conversion loop
+			// as that will bypass the ordering of the queue.
+			case watchEvent := <-watchEvents:
+				log.Info(watchEvent.AbsolutePath)
+				var err = rl.AddImage(watchEvent.Entry)
+				if err != nil {
+					log.Errorf("problem adding existing files to queue: %s", err)
 				}
 			}
 		}
 	}()
 
-	// add watch events to the queue. DO NOT add these directly to the conversion loop
-	// as that will bypass the ordering of the queue.
-	go func() {
-		for watchEvent := range watchEvents {
-			var err = rl.AddImage(watchEvent.Entry)
-			if err != nil {
-				log.Errorf("problem adding existing files to queue: %s", err)
-			}
-		}
-	}()
-
 	wg.Wait()
+	var done = make(chan struct{})
+	<-done
 }
 
 // AddImage adds the given image to the queue if the upsized path does not already exist.
