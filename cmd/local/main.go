@@ -83,23 +83,22 @@ func main() {
 		log.Fatalf("error getting existing upsized dirs: %s", err)
 	}
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.String(), realesrganPath, upscaledImages.String(), numGPUs, removeOriginals)
+	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.String(), realesrganPath, upscaledImages.String(), numGPUs, removeOriginals, daemon)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
 
-	// load up existing images
-	for _, image := range images {
-		err = rl.AddImage(image)
-		if err != nil {
-			log.Fatalf("error adding image to queue: %s", err)
-		}
-	}
-
 	if daemon {
-
 		var watchEvents = make(chan path.WatchEvent)
-		rl.Watch(watchEvents)
+		go rl.Watch(watchEvents)
+
+		// load up existing images
+		for _, image := range images {
+			err = rl.AddImage(image)
+			if err != nil {
+				log.Fatalf("error adding image to queue: %s", err)
+			}
+		}
 
 		var errors = make(chan error)
 		go func() {
@@ -111,6 +110,13 @@ func main() {
 		path.WatchDir(ctx, originalImages.String(), 2, false, watchEvents, errors, path.NewOpWatchFilter(fsnotify.Create), path.NewRegexWatchFilter(fs.ImageExtensionRegex))
 
 	} else {
+		// load up existing images
+		for _, image := range images {
+			err = rl.AddImage(image)
+			if err != nil {
+				log.Fatalf("error adding image to queue: %s", err)
+			}
+		}
 
 		err = rl.Run(nil) // images were already added above
 		if err != nil {
