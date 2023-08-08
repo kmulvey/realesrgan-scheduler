@@ -25,7 +25,7 @@ type RealesrganLocal struct {
 
 // NewRealesrganLocal is the constructor for running local upsizing. It takes a slice of existing files
 // and prepopulates the queue with them,  Run() takes a channel of watchEvents to stream files.
-func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath string, numGPUs int, removeOriginals bool) (*RealesrganLocal, error) {
+func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath string, numGPUs int, removeOriginals, watch bool) (*RealesrganLocal, error) {
 
 	var upsizeTime = prometheus.NewGauge(
 		prometheus.GaugeOpts{
@@ -43,7 +43,7 @@ func NewRealesrganLocal(promNamespace, cacheDir, realesrganPath, outputPath stri
 		UpsizeTimeGauge: upsizeTime,
 		NumGPUs:         numGPUs,
 		RemoveOriginals: removeOriginals,
-		Queue:           queue.New(false),
+		Queue:           queue.New(watch),
 	}
 
 	var cache, err = cache.New(cacheDir)
@@ -95,37 +95,30 @@ func (rl *RealesrganLocal) Watch(watchEvents chan path.WatchEvent) {
 	}
 
 	// listen for events from the queue and when we get one send NextImage() to the conversion loop.
-	go func() {
-		for {
-			select {
-			case <-rl.Queue.Notifications:
-				log.Info("read notif")
-				// handle new files that get added to the dir after we start
-				var img = rl.Queue.NextImage()
-				images <- img
-				wg.Add(1)
+	for {
+		select {
+		case <-rl.Queue.Notifications:
+			log.Info("read notif")
+			// handle new files that get added to the dir after we start
+			var img = rl.Queue.NextImage()
+			images <- img
+			wg.Add(1)
 
-				log.WithFields(log.Fields{
-					"remaining queue length": rl.Queue.Len(),
-					"original":               img.AbsolutePath,
-					"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
-				}).Info("upscaling")
+			log.WithFields(log.Fields{
+				"remaining queue length": rl.Queue.Len(),
+				"original":               img.AbsolutePath,
+				"original size":          PrettyPrintFileSizes(img.FileInfo.Size()),
+			}).Info("upscaling")
 
-			// add watch events to the queue. DO NOT add these directly to the conversion loop
-			// as that will bypass the ordering of the queue.
-			case watchEvent := <-watchEvents:
-				log.Info(watchEvent.AbsolutePath)
-				var err = rl.AddImage(watchEvent.Entry)
-				if err != nil {
-					log.Errorf("problem adding existing files to queue: %s", err)
-				}
+		// add watch events to the queue. DO NOT add these directly to the conversion loop
+		// as that will bypass the ordering of the queue.
+		case watchEvent := <-watchEvents:
+			var err = rl.AddImage(watchEvent.Entry)
+			if err != nil {
+				log.Errorf("problem adding existing files to queue: %s", err)
 			}
 		}
-	}()
-
-	wg.Wait()
-	var done = make(chan struct{})
-	<-done
+	}
 }
 
 // AddImage adds the given image to the queue if the upsized path does not already exist.
