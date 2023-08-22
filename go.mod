@@ -1,6 +1,6 @@
 module github.com/kmulvey/realesrgan-scheduler
 
-go 1.19
+go 1.21
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
