@@ -5,9 +5,13 @@ builds:
   
   - id: realesrgan-scheduler-auto
     main: ./cmd/auto/
+    env:
+      - CGO_ENABLED=0
     binary: realesrgan-scheduler-auto
     ldflags:
       - -s -w -X main.build={{.Version}}
+      - -X go.szostok.io/version.version={{.Version}}
+      - -X go.szostok.io/version.buildDate={{.Date}}
     goos:
       - freebsd
       - windows
@@ -21,9 +25,13 @@ builds:
 
   - id: realesrgan-scheduler-cleanup
     main: ./cmd/cleanup/
+    env:
+      - CGO_ENABLED=0
     binary: realesrgan-scheduler-cleanup
     ldflags:
       - -s -w -X main.build={{.Version}}
+      - -X go.szostok.io/version.version={{.Version}}
+      - -X go.szostok.io/version.buildDate={{.Date}}
     goos:
       - freebsd
       - windows
@@ -37,9 +45,13 @@ builds:
 
   - id: realesrgan-scheduler-local
     main: ./cmd/local/
+    env:
+      - CGO_ENABLED=0
     binary: realesrgan-scheduler-local
     ldflags:
       - -s -w -X main.build={{.Version}}
+      - -X go.szostok.io/version.version={{.Version}}
+      - -X go.szostok.io/version.buildDate={{.Date}}
     goos:
       - freebsd
       - windows
@@ -59,16 +71,12 @@ archives:
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
+
 checksum:
   name_template: 'checksums.txt'
+
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+  name_template: "{{ incpatch .Version }}-snapshot"
 
 nfpms:
   # note that this is an array of nfpm configs
@@ -93,7 +101,7 @@ nfpms:
 
     # Your app's description.
     description: |-
-      Threaded hashing for large files.
+      Automatically upscale images across multiple GPUs.
 
     # Your app's license.
     license: MIT
@@ -107,13 +115,13 @@ nfpms:
       - archlinux
 
     provides:
-      - realesrgan-scheduler
+      - realesrgan-scheduler-auto
+      - realesrgan-scheduler-cleanup
+      - realesrgan-scheduler-local
 
     # Path that the binaries should be installed.
     # Default: '/usr/bin'
     bindir: /usr/bin
-
-    changelog: ./changelog.yml
 
     # Custom configuration applied only to the RPM packager.
     rpm:
