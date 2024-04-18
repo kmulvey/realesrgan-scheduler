@@ -1,6 +1,6 @@
 # realesrgan-scheduler
 
-[![Build](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/build.yml/badge.svg)](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/build.yml) [![Release](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/release.yml/badge.svg)](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/release.yml) [![codecov](https://codecov.io/gh/kmulvey/realesrgan-scheduler/branch/main/graph/badge.svg?token=XpJ5kCJzsn)](https://codecov.io/gh/kmulvey/realesrgan-scheduler) [![Go Report Card](https://goreportcard.com/badge/github.com/kmulvey/realesrgan-scheduler)](https://goreportcard.com/report/github.com/kmulvey/realesrgan-scheduler) [![Go Reference](https://pkg.go.dev/badge/github.com/kmulvey/realesrgan-scheduler.svg)](https://pkg.go.dev/github.com/kmulvey/realesrgan-scheduler)
+[![Build](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/build.yml/badge.svg)](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/build.yml) [![Release](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/release.yml/badge.svg)](https://github.com/kmulvey/realesrgan-scheduler/actions/workflows/release.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/kmulvey/realesrgan-scheduler)](https://goreportcard.com/report/github.com/kmulvey/realesrgan-scheduler) [![Go Reference](https://pkg.go.dev/badge/github.com/kmulvey/realesrgan-scheduler.svg)](https://pkg.go.dev/github.com/kmulvey/realesrgan-scheduler)
 
 
 ```
