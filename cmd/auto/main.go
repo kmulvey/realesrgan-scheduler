@@ -119,14 +119,16 @@ func main() {
 		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
 		var originalsDir = filepath.Join(originalImages.AbsolutePath, upsizedBase)
 
-		var re, err = ignoreregex.SkipFileToRegexp(skipFile)
-		if err != nil {
-			log.Fatalf("error creating regex to skip dirs: %s", err)
-		}
+		if skipFile != "" {
+			var re, err = ignoreregex.SkipFileToRegexp(skipFile)
+			if err != nil {
+				log.Fatalf("error creating regex to skip dirs: %s", err)
+			}
 
-		if re.MatchString(originalsDir) {
-			log.Infof("skipping %s ...", originalsDir)
-			continue
+			if re.MatchString(originalsDir) {
+				log.Infof("skipping %s ...", originalsDir)
+				continue
+			}
 		}
 
 		rl.SetOutputPath(upsizedDir.AbsolutePath)
