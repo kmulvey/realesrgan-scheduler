@@ -7,7 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gosuri/uilive v0.0.4
 	github.com/jaypipes/ghw v0.12.0
-	github.com/kmulvey/path v1.21.0
+	github.com/kmulvey/path v1.22.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
