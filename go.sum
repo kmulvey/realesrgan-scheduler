@@ -126,8 +126,8 @@ github.com/klauspost/compress v1.17.8 h1:YcnTYrq7MikUT7k0Yb5eceMmALQPYBW/Xltxn0N
 github.com/klauspost/compress v1.17.8/go.mod h1:Di0epgTjJY877eYKx5yC51cX2A2Vl2ibi7bDH9ttBbw=
 github.com/kmulvey/goutils v0.6.0 h1:N3ZW0f9jf0lzXE7/LeDNw1jBDHiKnvX89/D9F37h/lU=
 github.com/kmulvey/goutils v0.6.0/go.mod h1:piD3FiBNFCOGTorRV2yFpjOUQFXVO5IiCHx0Nmmom8g=
-github.com/kmulvey/path v1.21.0 h1:7bBCCfds+JN2kkuEW20PLjZFTq1D44TYE7vQ4UaB+IQ=
-github.com/kmulvey/path v1.21.0/go.mod h1:4Kn6THn/giy6fKimfM13cRACjwH8o79lis+Vx9nu/Xc=
+github.com/kmulvey/path v1.22.0 h1:i4S+KBKeqvHdU9VGUNQAv+a/U6i1HhocHnvVzvBKANI=
+github.com/kmulvey/path v1.22.0/go.mod h1:wYDK4vhhMakyqVxcKxt7lj9OWP+vYPE99A/99aF/JNo=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
