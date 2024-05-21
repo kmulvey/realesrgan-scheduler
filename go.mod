@@ -46,7 +46,7 @@ require (
 	github.com/imdario/mergo v1.0.0 // indirect
 	github.com/jaypipes/pcidb v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
-	github.com/kmulvey/goutils v0.7.0 // indirect
+	github.com/kmulvey/goutils v0.8.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
