@@ -8,7 +8,7 @@ require (
 	github.com/gosuri/uilive v0.0.4
 	github.com/jaypipes/ghw v0.12.0
 	github.com/kmulvey/path v1.22.0
-	github.com/prometheus/client_golang v1.20.2
+	github.com/prometheus/client_golang v1.20.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	go.szostok.io/version v1.2.0
@@ -44,7 +44,6 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
-	github.com/imdario/mergo v1.0.1 // indirect
 	github.com/jaypipes/pcidb v1.0.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kmulvey/goutils v0.8.0 // indirect
