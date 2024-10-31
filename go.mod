@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/gosuri/uilive v0.0.4
 	github.com/jaypipes/ghw v0.13.0
 	github.com/kmulvey/path v1.22.0
@@ -34,7 +34,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/goccy/go-yaml v1.13.0 // indirect
+	github.com/goccy/go-yaml v1.13.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
