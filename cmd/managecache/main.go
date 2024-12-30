@@ -18,18 +18,21 @@ import (
 func main() {
 	// get the user options
 	var cacheDir path.Entry
-	var searchTerm, addImage string
-	var listKeys, h, ver bool
+	var searchTerm, addImage, removeImage string
+	var listKeys, purge, h, ver bool
 
 	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
 	flag.StringVar(&searchTerm, "search", "", "search term")
 	flag.StringVar(&addImage, "add-image", "", "image to add to cache")
+	flag.StringVar(&removeImage, "remove-image", "", "remove image from cache")
 	flag.BoolVar(&listKeys, "list-keys", false, "list all keys")
+	flag.BoolVar(&purge, "purge", false, "delete all keys")
 	flag.BoolVar(&ver, "version", false, "print version")
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
 
 	addImage = strings.TrimSpace(addImage)
+	removeImage = strings.TrimSpace(removeImage)
 	searchTerm = strings.TrimSpace(searchTerm)
 
 	if h {
@@ -52,14 +55,30 @@ func main() {
 	}
 
 	if addImage != "" {
-		if err := addKey(addImage, db); err != nil {
+		if err := add(addImage, db); err != nil {
 			log.Errorf("error adding key: %s", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 
+	} else if removeImage != "" {
+		if err = db.RemoveImage(removeImage); err != nil {
+			log.Errorf("error removing image: %s from cache, err :%s", removeImage, err)
+			os.Exit(1)
+		}
+		log.Infof("removed :%s from cache", removeImage)
+		os.Exit(0)
+
+	} else if purge {
+		if err = db.RemoveAllImages(); err != nil {
+			log.Errorf("error purging database, err :%s", err)
+			os.Exit(1)
+		}
+		log.Info("purged database")
+		os.Exit(0)
+
 	} else if searchTerm != "" || listKeys {
-		var results, err = searchKeys(searchTerm, db)
+		var results, err = searchImages(searchTerm, db)
 		if err != nil {
 			log.Errorf("error searching keys: %s", err)
 			os.Exit(1)
@@ -72,7 +91,7 @@ func main() {
 	}
 }
 
-func addKey(image string, db cache.Cache) error {
+func add(image string, db cache.Cache) error {
 	var entry, err = path.NewEntry(image, 0)
 	if err != nil {
 		return fmt.Errorf("image: %s does not exist, err :%w", image, err)
@@ -86,7 +105,7 @@ func addKey(image string, db cache.Cache) error {
 	return nil
 }
 
-func searchKeys(searchTerm string, db cache.Cache) ([]string, error) {
+func searchImages(searchTerm string, db cache.Cache) ([]string, error) {
 	var images = make(chan string)
 	var searchResults = make([]string, 0)
 	var wg sync.WaitGroup

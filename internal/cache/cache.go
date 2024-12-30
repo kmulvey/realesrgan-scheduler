@@ -39,6 +39,16 @@ func (c *Cache) AddImage(image path.Entry) error {
 	})
 }
 
+func (c *Cache) RemoveImage(image string) error {
+	return c.DB.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte(image))
+	})
+}
+
+func (c *Cache) RemoveAllImages() error {
+	return c.DB.DropAll()
+}
+
 func (c *Cache) Contains(image path.Entry) bool {
 
 	var found bool
