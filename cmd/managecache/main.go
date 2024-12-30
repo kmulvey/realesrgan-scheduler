@@ -19,14 +19,18 @@ func main() {
 	// get the user options
 	var cacheDir path.Entry
 	var searchTerm, addImage string
-	var h, ver bool
+	var listKeys, h, ver bool
 
 	flag.Var(&cacheDir, "cache-dir", "where to store the cache file for failed upsizes")
 	flag.StringVar(&searchTerm, "search", "", "search term")
 	flag.StringVar(&addImage, "add-image", "", "image to add to cache")
+	flag.BoolVar(&listKeys, "list-keys", false, "list all keys")
 	flag.BoolVar(&ver, "version", false, "print version")
 	flag.BoolVar(&h, "help", false, "print options")
 	flag.Parse()
+
+	addImage = strings.TrimSpace(addImage)
+	searchTerm = strings.TrimSpace(searchTerm)
 
 	if h {
 		flag.PrintDefaults()
@@ -42,43 +46,64 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.Infof("Config: cacheDir: %s, searchTerm: %s", cacheDir.String(), searchTerm)
-
 	var db, err = cache.New(cacheDir.String())
 	if err != nil {
 		log.Errorf("error opening badger dir: %s", err)
 	}
 
-	addImage = strings.TrimSpace(addImage)
 	if addImage != "" {
-		var entry, err = path.NewEntry(addImage, 0)
+		if err := addKey(addImage, db); err != nil {
+			log.Errorf("error adding key: %s", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+
+	} else if searchTerm != "" || listKeys {
+		var results, err = searchKeys(searchTerm, db)
 		if err != nil {
-			log.Fatalf("image: %s does not exist", addImage)
+			log.Errorf("error searching keys: %s", err)
+			os.Exit(1)
 		}
 
-		err = db.AddImage(entry)
-		if err != nil {
-			log.Fatalf("error adding image: %s to cache", addImage)
+		for _, img := range results {
+			fmt.Println(img)
 		}
-
 		os.Exit(0)
 	}
+}
 
+func addKey(image string, db cache.Cache) error {
+	var entry, err = path.NewEntry(image, 0)
+	if err != nil {
+		return fmt.Errorf("image: %s does not exist, err :%w", image, err)
+	}
+
+	err = db.AddImage(entry)
+	if err != nil {
+		return fmt.Errorf("error adding image: %s to cache, err :%w", image, err)
+	}
+
+	return nil
+}
+
+func searchKeys(searchTerm string, db cache.Cache) ([]string, error) {
 	var images = make(chan string)
+	var searchResults = make([]string, 0)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		for img := range images {
-			fmt.Println(img)
+			searchResults = append(searchResults, img)
 		}
 		wg.Done()
 	}()
 
-	err = db.ListKeys(searchTerm, images)
-	if err != nil {
+	if err := db.ListKeys(searchTerm, images); err != nil {
 		log.Errorf("error listing keys: %s", err)
 	}
 
 	wg.Wait()
+
+	return searchResults, nil
 }
