@@ -96,3 +96,30 @@ func WatchDir(ctx context.Context, inputDir, outputDir string, images chan path.
 
 	return nil
 }
+
+func FindNewImages(originalsDir, upsizedDir string, depth uint8) ([]string, error) {
+
+	var originalImages, err = path.List(originalsDir, depth, false, path.NewRegexEntitiesFilter(ImageExtensionRegex))
+	if err != nil {
+		return nil, err
+	}
+
+	upsizedImages, err := path.List(upsizedDir, depth, false, path.NewRegexEntitiesFilter(ImageExtensionRegex))
+	if err != nil {
+		return nil, err
+	}
+
+	var upsizedImagesSet = make(map[string]struct{}, len(upsizedImages))
+	for _, img := range upsizedImages {
+		upsizedImagesSet[strings.ReplaceAll(img.AbsolutePath, upsizedDir, "")] = struct{}{}
+	}
+	var newImages []string
+
+	for _, img := range originalImages {
+		if _, exists := upsizedImagesSet[strings.ReplaceAll(img.AbsolutePath, originalsDir, "")]; !exists {
+			newImages = append(newImages, img.AbsolutePath)
+		}
+	}
+
+	return newImages, nil
+}
