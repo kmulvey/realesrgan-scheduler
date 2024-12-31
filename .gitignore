@@ -16,11 +16,13 @@
 
 dist
 cmd/auto/skipcache/
+cmd/auto/newcache
 cmd/auto/auto
 cmd/cleanup/cleanup
 cmd/comparedirs/comparedirs
 cmd/managecache/managecache
 cmd/local/local
+cmd/diffdirs/diffdirs
 retiredskiplist.txt
 largeskiplist.txt
 .vscode
