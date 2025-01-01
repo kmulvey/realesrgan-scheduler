@@ -5,15 +5,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/jaypipes/ghw"
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
-	"github.com/kmulvey/realesrgan-scheduler/internal/fs"
-	"github.com/kmulvey/realesrgan-scheduler/internal/pkg/ignoreregex"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
@@ -88,11 +85,6 @@ func main() {
 		daemon,
 		numGPUs)
 
-	var upsizedDirs, err = path.List(upscaledImages.AbsolutePath, 2, false, path.NewDirEntitiesFilter())
-	if err != nil {
-		log.Fatalf("error getting existing upsized dirs: %s", err)
-	}
-
 	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, numGPUs, removeOriginals, false)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
@@ -113,41 +105,29 @@ func main() {
 		}
 	}()
 
-	// for each upsized directory, go back to its "originals" dir and look for additional files that have not been upsized.
-	for _, upsizedDir := range upsizedDirs {
+	skipDirs, err := makeSkipMap(skipFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		var upsizedBase = filepath.Base(upsizedDir.AbsolutePath)
-		var originalsDir = filepath.Join(originalImages.AbsolutePath, upsizedBase)
+	skipFiles, err := getSkipFiles(cacheDir.AbsolutePath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		if skipFile != "" {
-			var re, err = ignoreregex.SkipFileToRegexp(skipFile)
-			if err != nil {
-				log.Fatalf("error creating regex to skip dirs: %s", err)
-			}
+	upsizedDirs, err := path.List(upscaledImages.AbsolutePath, 2, false, path.NewDirEntitiesFilter())
+	if err != nil {
+		log.Fatalf("error getting existing upsized dirs: %s", err)
+	}
 
-			if re.MatchString(originalsDir) {
-				log.Infof("skipping %s ...", originalsDir)
-				continue
-			}
-		}
+	newImages, err := findFilesToUpsize(upsizedDirs, "/home/kmulvey/Documents", skipDirs, skipFiles)
+	if err != nil {
+		log.Fatalf("error getting list of new files: %s", err)
+	}
 
-		rl.SetOutputPath(upsizedDir.AbsolutePath)
-
-		originalImages, err := path.List(originalsDir, 2, false, path.NewRegexEntitiesFilter(fs.ImageExtensionRegex))
-		if err != nil {
-			log.Errorf("error getting existing original images: %s", err)
-		}
-
-		if len(originalImages) == 0 {
-			continue
-		}
-
-		log.Infof("Starting queue length: %d for dir: %s", rl.Queue.Len(), originalsDir)
-
-		err = rl.Run(originalImages)
-		if err != nil {
-			log.Errorf("error in Run(): %s", err)
-		}
+	err = rl.Run(newImages...)
+	if err != nil {
+		log.Errorf("error in Run(): %s", err)
 	}
 }
 
