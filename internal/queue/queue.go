@@ -3,10 +3,11 @@ package queue
 import (
 	"container/list"
 	"fmt"
+	"os"
 	"reflect"
 	"sync"
 
-	"github.com/kmulvey/path"
+	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,32 +38,32 @@ func New(notifications bool) *Queue {
 
 // NextImage returns the path.Entry for the image at the front of the queue.
 // If there are no more entires it will return an empty path.Entry, as such you will need to check its value.
-func (q *Queue) NextImage() path.Entry {
+func (q *Queue) NextImage() *realesrgan.ImageConfig {
 
 	q.Lock.Lock()
 	defer q.Lock.Unlock()
 
 	var next = q.List.Front()
 	if next == nil {
-		return path.Entry{}
+		return nil
 	}
 
-	var nextImage, _ = next.Value.(path.Entry) // we dont bother checking if the cast went well because there is no way you could have pushed a non Entry on anyway
+	var nextImage, _ = next.Value.(*realesrgan.ImageConfig) // we dont bother checking if the cast went well because there is no way you could have pushed a non Entry on anyway
 
-	q.RemovedImages[nextImage.AbsolutePath] = struct{}{}
+	q.RemovedImages[nextImage.SourceFile] = struct{}{}
 	q.List.Remove(next)
 
 	return nextImage
 }
 
 // Add dedup files based on abs path and adds the given image to the list in size order.
-func (q *Queue) Add(newImage path.Entry) error {
+func (q *Queue) Add(newImage *realesrgan.ImageConfig) error {
 
 	q.Lock.Lock()
 	defer q.Lock.Unlock()
 
 	// Skip in-flight images
-	if _, found := q.RemovedImages[newImage.AbsolutePath]; found {
+	if _, found := q.RemovedImages[newImage.SourceFile]; found {
 		return nil
 	}
 
@@ -79,29 +80,37 @@ ElementLoop:
 	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
 
 		// this should never happen but we check it for checking's sake
-		var currEntry, ok = currElement.Value.(path.Entry)
+		var currEntry, ok = currElement.Value.(*realesrgan.ImageConfig)
 		if !ok {
 			return fmt.Errorf("casting currFile to path.Entry failed, was actually type: %s", reflect.TypeOf(currElement.Value))
 		}
 
 		// dedup
-		if newImage.AbsolutePath == currEntry.AbsolutePath {
+		if newImage.SourceFile == currEntry.SourceFile {
 			return nil
 
 		}
 
 		var hasNext = currElement.Next() != nil
+		var newImageFileInfo, err = os.Stat(newImage.SourceFile)
+		if err != nil {
+			return fmt.Errorf("error getting file info for %s: %w", newImage.SourceFile, err)
+		}
+		currEntryFileInfo, err := os.Stat(currEntry.SourceFile)
+		if err != nil {
+			return fmt.Errorf("error getting file info for %s: %w", newImage.SourceFile, err)
+		}
 
 		switch {
 
-		case newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && hasNext:
+		case newImageFileInfo.Size() >= currEntryFileInfo.Size() && hasNext:
 			continue ElementLoop
 
-		case newImage.FileInfo.Size() >= currEntry.FileInfo.Size() && !hasNext:
+		case newImageFileInfo.Size() >= currEntryFileInfo.Size() && !hasNext:
 			q.List.InsertAfter(newImage, currElement)
 			break ElementLoop
 
-		case newImage.FileInfo.Size() <= currEntry.FileInfo.Size():
+		case newImageFileInfo.Size() <= currEntryFileInfo.Size():
 			q.List.InsertBefore(newImage, currElement)
 			break ElementLoop
 
@@ -123,16 +132,47 @@ func (q *Queue) Len() int {
 	return q.List.Len()
 }
 
+// Contains checks if the targetImage is present in the queue.
+// It iterates through the elements of the queue and compares the SourceFile
+// field of each element with the SourceFile field of the targetImage.
+// If a match is found, it returns true. Otherwise, it returns false.
+//
+// Parameters:
+//
+//	targetImage - a pointer to the realesrgan.ImageConfig to be checked.
+//
+// Returns:
+//
+//	bool - true if the targetImage is found in the queue, false otherwise.
+func (q *Queue) Contains(targetImage *realesrgan.ImageConfig) bool {
+	q.Lock.Lock()
+	defer q.Lock.Unlock()
+
+	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
+
+		var currEntry, ok = currElement.Value.(*realesrgan.ImageConfig)
+		if !ok {
+			log.Errorf("casting currFile to path.Entry failed, was actually type: %s", reflect.TypeOf(currElement.Value))
+		}
+
+		if targetImage.SourceFile == currEntry.SourceFile {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Print does just that for the whole queue from Front to Back.
 func (q *Queue) Print() {
 
 	for currElement := q.List.Front(); currElement != nil; currElement = currElement.Next() {
 
-		var currEntry, ok = currElement.Value.(path.Entry)
+		var currEntry, ok = currElement.Value.(*realesrgan.ImageConfig)
 		if !ok {
 			log.Errorf("casting currFile to path.Entry failed, was actually type: %s", reflect.TypeOf(currElement.Value))
 		}
 
-		fmt.Println(currEntry.AbsolutePath)
+		fmt.Println(currEntry.SourceFile)
 	}
 }

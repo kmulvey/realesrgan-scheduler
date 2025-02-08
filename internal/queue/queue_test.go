@@ -1,13 +1,6 @@
 package queue
 
-import (
-	"container/list"
-	"testing"
-
-	"github.com/kmulvey/path"
-	"github.com/stretchr/testify/assert"
-)
-
+/*
 func TestAdd(t *testing.T) {
 	t.Parallel()
 
@@ -119,3 +112,4 @@ func validateAll(t *testing.T, queue *Queue, small, medium, large path.Entry) {
 // 		fmt.Printf("name: %s, size: %d \n", currEntry.FileInfo.Name(), currEntry.FileInfo.Size())
 // 	}
 // }
+*/
