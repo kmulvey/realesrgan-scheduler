@@ -3,43 +3,30 @@ package local
 import (
 	"sync"
 
-	"github.com/kmulvey/path"
-	log "github.com/sirupsen/logrus"
+	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 )
 
-// UpsizeQueue upsizes all the images in the queue and returns.
+// UpsizeQueue upsizes all the images in the queue using all available gpus.
 func (rl *RealesrganLocal) UpsizeQueue() {
-
 	var wg sync.WaitGroup
-	var inputImages = make(chan path.Entry)
-	rl.UpsizeWatch(&wg, inputImages)
+	var semaphore = make(chan uint8, rl.NumGPUs)
+	for i := range rl.NumGPUs {
+		semaphore <- i
+	}
 
 	for rl.Queue.Len() > 0 {
-		var inputImage = rl.Queue.NextImage()
-		inputImages <- inputImage
-		wg.Add(1)
+		var nextImage = rl.Queue.NextImage()
+		nextImage.GpuId = <-semaphore
 
-		log.WithFields(log.Fields{
-			"remaining queue length": rl.Queue.Len(),
-			"original":               inputImage.AbsolutePath,
-			"original size":          PrettyPrintFileSizes(inputImage.FileInfo.Size()),
-		}).Info("upscaling")
+		wg.Add(1)
+		go func(image *realesrgan.ImageConfig) {
+			defer wg.Done()
+			defer func() { semaphore <- image.GpuId }() // release the gpu
+
+			rl.files <- image // notify the file is being processed
+			realesrgan.Upsize(*image)
+		}(nextImage)
 	}
 
 	wg.Wait()
-}
-
-// UpsizeWatch allows for the running of more than one worker thread at once for use with multiple gpus.
-func (rl *RealesrganLocal) UpsizeWatch(wg *sync.WaitGroup, inputImages chan path.Entry) {
-	for i := rl.NumGPUs - 1; i >= 0; i-- {
-		i := i
-		go rl.UpsizeLoop(wg, i, inputImages)
-	}
-}
-
-// UpsizeLoop reads from the images chan and upsizes the image.
-func (rl *RealesrganLocal) UpsizeLoop(wg *sync.WaitGroup, gpuID int, inputImages chan path.Entry) {
-	for image := range inputImages {
-		rl.Upsize(wg, image, gpuID)
-	}
 }
