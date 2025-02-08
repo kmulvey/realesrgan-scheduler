@@ -14,9 +14,9 @@ import (
 	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 )
 
-func findFilesToUpsize(upsizeDirs []path.Entry, originalsDir string, skipDirs map[string]struct{}, skipImages map[string]struct{}) ([]realesrgan.ImageConfig, error) {
+func findFilesToUpsize(upsizeDirs []path.Entry, originalsDir string, skipDirs map[string]struct{}, skipImages map[string]struct{}) ([]*realesrgan.ImageConfig, error) {
 
-	var allImages []realesrgan.ImageConfig
+	var allImages []*realesrgan.ImageConfig
 	for _, upsizedDir := range upsizeDirs {
 
 		if _, ok := skipDirs[upsizedDir.FileInfo.Name()]; ok {
@@ -54,7 +54,7 @@ func findFilesToUpsize(upsizeDirs []path.Entry, originalsDir string, skipDirs ma
 
 		if len(originalsIndex) > 0 {
 			for _, entry := range originalsIndex {
-				var img = realesrgan.ImageConfig{
+				var img = &realesrgan.ImageConfig{
 					SourceFile:  entry.AbsolutePath,
 					UpsizedFile: filepath.Join(upsizedDir.AbsolutePath, entry.FileInfo.Name()),
 				}

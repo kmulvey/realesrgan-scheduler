@@ -11,6 +11,7 @@ import (
 	"github.com/jaypipes/ghw"
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
+	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
@@ -20,7 +21,6 @@ import (
 const promNamespace = "realesrgan_scheduler"
 
 func main() {
-
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
@@ -85,7 +85,13 @@ func main() {
 		daemon,
 		numGPUs)
 
-	rl, err := local.NewRealesrganLocal(promNamespace, cacheDir.AbsolutePath, realesrganPath, upscaledImages.AbsolutePath, numGPUs, removeOriginals, false)
+	var files = make(chan *realesrgan.ImageConfig)
+	go func() {
+		for f := range files {
+			log.Infof("processing file: %s", f.SourceFile)
+		}
+	}()
+	rl, err := local.NewRealesrganLocal(promNamespace, realesrganPath, "realesrgan-x4plus", uint8(numGPUs), removeOriginals, files)
 	if err != nil {
 		log.Fatalf("error in: NewRealesrganLocal %s", err)
 	}
@@ -94,12 +100,6 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		for range c {
-			log.Info("interrupt caught, closing db ...")
-			err = rl.Cache.Close()
-			if err != nil {
-				log.Fatalf("error closing badger: %s", err)
-			}
-
 			log.Info("bye")
 			os.Exit(0)
 		}
