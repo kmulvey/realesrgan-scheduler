@@ -1,28 +1,34 @@
 package main
 
 import (
-	"testing"
-
 	"github.com/kmulvey/path"
 	"github.com/kmulvey/realesrgan-scheduler/internal/app/realesrgan/local"
 	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestFiles(t *testing.T) {
+func tui() {
+	var numGPUs = 2
 
 	var skipDirs, err = makeSkipMap("./skip.txt")
-	assert.NoError(t, err)
+	if err != nil {
+		log.Fatalf("problem making skip map: %s", err)
+	}
 
 	skipImages, err := getSkipFiles("../auto/skipcache")
-	assert.NoError(t, err)
+	if err != nil {
+		log.Fatalf("problem getting skip files: %s", err)
+	}
 
 	upsizedDirs, err := path.List("/home/kmulvey/empyrean/backup/upscayl/", 2, false, path.NewDirEntitiesFilter())
-	assert.NoError(t, err)
+	if err != nil {
+		log.Fatalf("error getting existing upsized dirs: %s", err)
+	}
 
 	images, err := findFilesToUpsize(upsizedDirs, "/home/kmulvey/Documents", skipDirs, skipImages)
-	assert.NoError(t, err)
+	if err != nil {
+		log.Fatalf("error getting list of new files: %s", err)
+	}
 
 	//////////////////
 	var files = make(chan *realesrgan.ImageConfig)
@@ -37,10 +43,13 @@ func TestFiles(t *testing.T) {
 		}
 	}()
 
-	rl, err := local.NewRealesrganLocal(promNamespace, "/home/kmulvey/src/realesrgan-ncnn-vulkan-20220424-ubuntu/realesrgan-ncnn-vulkan", "realesrgan-x4plus", 2, true, files)
-	assert.NoError(t, err)
+	rl, err := local.NewRealesrganLocal(promNamespace, "/home/kmulvey/src/realesrgan-ncnn-vulkan-20220424-ubuntu/realesrgan-ncnn-vulkan", "realesrgan-x4plus", uint8(numGPUs), true, files)
+	if err != nil {
+		log.Fatalf("error in: NewRealesrganLocal %s", err)
+	}
 
 	err = rl.Run(images...)
-	assert.NoError(t, err)
-
+	if err != nil {
+		log.Errorf("error in Run(): %s", err)
+	}
 }
