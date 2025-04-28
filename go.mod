@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/fsnotify/fsnotify v1.8.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gosuri/uilive v0.0.4
 	github.com/jaypipes/ghw v0.16.0
 	github.com/kmulvey/path v1.22.0
