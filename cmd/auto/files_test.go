@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const promNamespace = "realesrgan_scheduler"
+
 func TestFiles(t *testing.T) {
 
 	var skipDirs, err = makeSkipMap("./skip.txt")
@@ -18,7 +20,7 @@ func TestFiles(t *testing.T) {
 	skipImages, err := getSkipFiles("../auto/skipcache")
 	assert.NoError(t, err)
 
-	upsizedDirs, err := path.List("/home/kmulvey/empyrean/backup/upscayl/", 2, false, path.NewDirEntitiesFilter())
+	upsizedDirs, err := path.List("/home/kmulvey/empyrean/backup/upscayl", 2, false, path.NewDirEntitiesFilter())
 	assert.NoError(t, err)
 
 	images, err := findFilesToUpsize(upsizedDirs, "/home/kmulvey/Documents", skipDirs, skipImages)
@@ -28,9 +30,9 @@ func TestFiles(t *testing.T) {
 	var files = make(chan *realesrgan.ImageConfig)
 	go func() {
 		for f := range files {
-			log.Infof("processing file: %s", f.SourceFile)
+			log.Infof("processing file: %s, remaining: %d", f.SourceFile, f.Remaining)
 			go func() {
-				for pct := range f.Progess {
+				for pct := range f.Progress {
 					log.Infof("%s: %s", f.SourceFile, pct)
 				}
 			}()
