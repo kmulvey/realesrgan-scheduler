@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const promNamespace = "realesrgan_scheduler"
-
 func TestFiles(t *testing.T) {
 
 	var skipDirs, err = makeSkipMap("./skip.txt")
