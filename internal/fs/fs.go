@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -9,9 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/kmulvey/path"
-	log "github.com/sirupsen/logrus"
+	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 )
 
 // ImageExtensionRegex are all the supported image extensions, and the only ones that will be included in file search/globbing.
@@ -38,9 +36,9 @@ func WatchEventChanToEntryChan(watchEvents chan path.WatchEvent) chan path.Entry
 }
 
 // AlreadyUpsized checks if we already upsized the image.
-func AlreadyUpsized(originalImage path.Entry, outputPath string) bool {
+func AlreadyUpsized(originalImage *realesrgan.ImageConfig, outputPath string) bool {
 
-	var upsizedImagePath = filepath.Base(originalImage.AbsolutePath)
+	var upsizedImagePath = filepath.Base(originalImage.SourceFile)
 	upsizedImagePath = filepath.Join(outputPath, strings.Replace(upsizedImagePath, filepath.Ext(upsizedImagePath), ".jpg", 1))
 
 	if _, err := os.Stat(upsizedImagePath); errors.Is(err, os.ErrNotExist) {
@@ -61,6 +59,7 @@ func MakeDir(path string) error {
 	return nil
 }
 
+/*
 // WatchDir will watch the given dir for new files and will publish the ones not already upsized to
 // the given images chan.
 func WatchDir(ctx context.Context, inputDir, outputDir string, images chan path.Entry) error {
@@ -96,6 +95,7 @@ func WatchDir(ctx context.Context, inputDir, outputDir string, images chan path.
 
 	return nil
 }
+*/
 
 func FindNewImages(originalsDir, upsizedDir string, depth uint8) ([]string, error) {
 
