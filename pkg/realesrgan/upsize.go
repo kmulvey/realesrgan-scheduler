@@ -27,7 +27,8 @@ type ImageConfig struct {
 	ModelName      string
 	RealesrganPath string
 	GpuId          uint8
-	Progess        chan string
+	Remaining      int
+	Progress       chan string
 }
 
 var upscaylFailedRegex = regexp.MustCompile(`^decode\simage\s.*\sfailed`)
@@ -46,7 +47,7 @@ func Upsize(img ImageConfig) error {
 	}
 
 	// upsize it !
-	var err = runCmdAndCaptureOutput(img.RealesrganPath, img.SourceFile, img.UpsizedFile, img.ModelName, img.GpuId, img.Progess)
+	var err = runCmdAndCaptureOutput(img.RealesrganPath, img.SourceFile, img.UpsizedFile, img.ModelName, img.GpuId, img.Progress)
 	if err != nil {
 		return fmt.Errorf("error running upsize command on file %s, err: %w", img.SourceFile, err)
 	}
