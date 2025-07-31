@@ -16,6 +16,7 @@ func (rl *RealesrganLocal) UpsizeQueue() {
 
 	for rl.Queue.Len() > 0 {
 		var nextImage = rl.Queue.NextImage()
+		nextImage.Remaining = rl.Queue.Len() // set the remaining count for the image
 		nextImage.GpuId = <-semaphore
 
 		wg.Add(1)
