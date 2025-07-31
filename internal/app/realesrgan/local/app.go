@@ -53,7 +53,7 @@ func (rl *RealesrganLocal) Run(images ...*realesrgan.ImageConfig) error {
 
 		image.ModelName = rl.ModelName
 		image.RealesrganPath = rl.RealesrganPath
-		image.Progess = make(chan string)
+		image.Progress = make(chan string)
 
 		var err = rl.AddImage(image)
 		if err != nil {
