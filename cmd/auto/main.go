@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"sort"
@@ -145,6 +146,10 @@ func (m model) View() string {
 }
 
 func main() {
+	originalsDir := flag.String("originals", "", "Root directory containing already upsized directories to scan")
+	listOnly := flag.Bool("list-only", false, "List images to upsize without processing them")
+	flag.Parse()
+
 	// Open log file
 	logFile, err := os.OpenFile("scheduler.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
@@ -169,9 +174,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	images, err := findFilesToUpsize(upsizedDirs, "/home/kmulvey/empyrean/backup/retirees", skipDirs, skipImages)
+	images, err := findFilesToUpsize(upsizedDirs, *originalsDir, skipDirs, skipImages)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *listOnly {
+		for _, img := range images {
+			fmt.Printf("Found image to upsize: %s\n", img.SourceFile)
+		}
+		return
 	}
 
 	//////////////////
