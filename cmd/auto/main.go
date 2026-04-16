@@ -228,4 +228,8 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
+
+	for _, img := range images {
+		fmt.Printf("Upsized: %s\n", img.UpsizedFile)
+	}
 }
