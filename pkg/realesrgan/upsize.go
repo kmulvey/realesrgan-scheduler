@@ -92,6 +92,8 @@ func runCmdAndCaptureOutput(cmdPath, inputImagePath, upsizedImagePath, modelName
 	if err != nil {
 		return fmt.Errorf("error running cmd: %w", err)
 	}
+
+	progress <- "100%"
 	return nil
 }
 

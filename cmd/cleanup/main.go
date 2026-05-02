@@ -53,15 +53,17 @@ func main() {
 		var upsizedBase = filepath.Base(dir.AbsolutePath)
 		var leafDir = filepath.Join(originalImages.AbsolutePath, upsizedBase)
 
-		var re, err = ignoreregex.SkipFileToRegexp(skipFile)
-		if err != nil {
-			log.Errorf("error creating regex to skip dirs: %s", err)
-			continue
-		}
+		if len(skipFile) > 0 {
+			var re, err = ignoreregex.SkipFileToRegexp(skipFile)
+			if err != nil {
+				log.Errorf("error creating regex to skip dirs: %s", err)
+				continue
+			}
 
-		if re.MatchString(leafDir) {
-			log.Infof("skipping %s ...", dir.FileInfo.Name())
-			continue
+			if re.MatchString(leafDir) {
+				log.Infof("skipping %s ...", dir.FileInfo.Name())
+				continue
+			}
 		}
 
 		var baseDir = filepath.Base(dir.AbsolutePath)

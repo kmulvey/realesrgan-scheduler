@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/kmulvey/path"
@@ -10,6 +12,7 @@ import (
 	"github.com/kmulvey/realesrgan-scheduler/pkg/realesrgan"
 	log "github.com/sirupsen/logrus"
 
+	progress "github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -19,6 +22,7 @@ type imageStatus struct {
 	Name     string
 	Size     string
 	Progress float64 // 0.0 - 1.0
+	Bar      progress.Model
 }
 
 type progressMsg struct {
@@ -52,23 +56,56 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
+		barWidth := m.width / 2
+		for _, img := range m.Processing {
+			img.Bar.Width = barWidth // Only update the width, don't recreate the bar
+		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
 	case addImageMsg:
+		barWidth := m.width / 2
+		if barWidth <= 0 {
+			barWidth = 40 // fallback
+		}
 		m.Processing[msg.Name] = &imageStatus{
 			Name: msg.Name,
 			Size: msg.Size,
+			Bar:  progress.New(progress.WithDefaultGradient(), progress.WithWidth(barWidth)),
 		}
 	case progressMsg:
 		if img, ok := m.Processing[msg.Name]; ok {
-			img.Progress = msg.Progress
-			if msg.Progress >= 1.0 {
+			log.Printf("UPDATE HANDLER: %s progress=%.2f", msg.Name, msg.Progress)
+			progress := msg.Progress
+			if progress > 1.0 {
+				progress = 1.0
+			}
+			if progress < 0.0 {
+				progress = 0.0
+			}
+			img.Progress = progress
+			cmd := img.Bar.SetPercent(progress)
+			if progress >= 1.0 {
 				m.ImagesRemaining--
 			}
+			return m, cmd
+		} else {
+			log.Printf("progressMsg for unknown image: %s", msg.Name)
 		}
+	case progress.FrameMsg:
+		cmds := make([]tea.Cmd, 0, len(m.Processing))
+		for _, img := range m.Processing {
+			barModel, cmd := img.Bar.Update(msg)
+			if bm, ok := barModel.(progress.Model); ok {
+				img.Bar = bm
+			}
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+		return m, tea.Batch(cmds...)
 	}
 	return m, nil
 }
@@ -77,7 +114,7 @@ func (m model) View() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Images Remaining: %d\n\n", m.ImagesRemaining)
 
-	// Default width if not set yet
+	// Responsive width
 	w := m.width
 	if w <= 0 {
 		w = 80
@@ -85,10 +122,18 @@ func (m model) View() string {
 	barWidth := w / 2
 	infoWidth := w - barWidth - 2 // -2 for spacing
 
-	for _, img := range m.Processing {
-		bar := progressBar(img.Progress, barWidth)
-		info := fmt.Sprintf("%3.0f%%  %s (%s)", img.Progress*100, img.Name, img.Size)
-		// Pad or trim info to fit
+	// Convert map to slice and sort by progress descending
+	var sorted []*imageStatus
+	for _, v := range m.Processing {
+		sorted = append(sorted, v)
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Progress > sorted[j].Progress
+	})
+
+	for _, img := range sorted {
+		bar := img.Bar.View()
+		info := fmt.Sprintf("%s (%s)", img.Name, img.Size)
 		if len(info) > infoWidth {
 			info = info[:infoWidth]
 		} else {
@@ -100,13 +145,21 @@ func (m model) View() string {
 	return b.String()
 }
 
-func progressBar(p float64, width int) string {
-	filled := int(p * float64(width))
-	return "[" + strings.Repeat("█", filled) + strings.Repeat("-", width-filled) + "]"
-}
-
 func main() {
-	var skipDirs, err = makeSkipMap("./skip.txt")
+	originalsDir := flag.String("originals", "", "Root directory containing already upsized directories to scan")
+	listOnly := flag.Bool("list-only", false, "List images to upsize without processing them")
+	flag.Parse()
+
+	// Open log file
+	logFile, err := os.OpenFile("scheduler.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Println("Could not open log file:", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
+
+	skipDirs, err := makeSkipMap("./skip.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,9 +174,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	images, err := findFilesToUpsize(upsizedDirs, "/home/kmulvey/Documents", skipDirs, skipImages)
+	images, err := findFilesToUpsize(upsizedDirs, *originalsDir, skipDirs, skipImages)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *listOnly {
+		for _, img := range images {
+			fmt.Printf("Found image to upsize: %s\n", img.SourceFile)
+		}
+		return
 	}
 
 	//////////////////
@@ -142,11 +202,13 @@ func main() {
 
 			go func(f *realesrgan.ImageConfig) {
 				for pct := range f.Progress {
-					// Parse "3.5%" to float
 					progressVal := 0.0
 					fmt.Sscanf(pct, "%f%%", &progressVal)
+					log.Printf("GOT progress from realesrgan for %s: raw=%q parsed=%.2f%%", f.SourceFile, pct, progressVal)
 					p.Send(progressMsg{Name: f.SourceFile, Progress: progressVal / 100.0})
 				}
+				log.Printf("SENDING FINAL progressMsg for %s: 1.00", f.SourceFile)
+				p.Send(progressMsg{Name: f.SourceFile, Progress: 1.0})
 			}(f)
 		}
 	}()
@@ -165,5 +227,9 @@ func main() {
 
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
+	}
+
+	for _, img := range images {
+		fmt.Printf("Upsized: %s\n", img.UpsizedFile)
 	}
 }
